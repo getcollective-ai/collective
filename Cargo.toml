@@ -1,0 +1,7 @@
+[workspace]
+members = ["launcher", "utils", "openai"]
+
+[workspace.dependencies]
+launcher = { path = "launcher" }
+utils = { path = "utils" }
+openai = { path = "openai" }

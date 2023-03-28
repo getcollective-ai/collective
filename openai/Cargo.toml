@@ -1,0 +1,22 @@
+[package]
+name = "openai"
+version = "1.0.0"
+edition = "2021"
+description = "tokio support for OpenAI API"
+license = "MIT"
+
+[dependencies]
+anyhow = "1.0.69"
+reqwest = { version = "0.11", features = ["json", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+futures-util = "0.3.26"
+serde_json = "1.0"
+tokio-stream = "0.1.12"
+tokio = { version = "1.25", features = ["full"] }
+derive_more = "0.99.17"
+utils.workspace = true
+event-stream-processor = "1.0.0"
+
+[dev-dependencies]
+once_cell = "1.17"
+regex = "1.7.1"

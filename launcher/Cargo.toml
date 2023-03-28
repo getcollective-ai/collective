@@ -1,0 +1,9 @@
+[package]
+name = "launcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.26.0", features = ["full"] }
+anyhow = "1.0.70"
+openai.workspace = true

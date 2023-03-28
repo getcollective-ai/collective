@@ -1,0 +1,59 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  rust_ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust (nightly)
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt, clippy
+          override: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run cargo fmt
+        run: cargo +nightly fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo +nightly clippy --all-targets --all-features -- -D warnings
+
+      - name: Install nextest
+        run: cargo install cargo-nextest
+
+      - name: Run cargo nextest
+        run: cargo nextest run --all-features
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run tarpaulin for code coverage
+        run: cargo tarpaulin --skip-clean --out Xml
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+
+      - name: Upload coverage to codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: cobertura.xml
+          fail_ci_if_error: true
