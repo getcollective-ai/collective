@@ -48,7 +48,7 @@ jobs:
         run: cargo install cargo-tarpaulin
 
       - name: Run tarpaulin for code coverage
-        run: cargo tarpaulin --skip-clean --out Xml
+        run: cargo tarpaulin --engine llvm --skip-clean --out Xml
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
