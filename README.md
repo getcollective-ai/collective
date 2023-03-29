@@ -1,5 +1,7 @@
 # `collective`
 
+[![codecov](https://codecov.io/github/getcollective-ai/collective/branch/main/graph/badge.svg?token=C7HBZAAX3B)](https://codecov.io/github/getcollective-ai/collective)
+
 An AI developer that evolves to fit your needs.
 
 ---
