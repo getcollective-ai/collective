@@ -236,10 +236,12 @@ pub struct ChatRequest {
 }
 
 impl ChatRequest {
+    #[must_use]
     pub fn model(self, model: ChatModel) -> Self {
         Self { model, ..self }
     }
 
+    #[must_use]
     pub fn temperature(self, temperature: f64) -> Self {
         Self {
             temperature,
@@ -247,6 +249,7 @@ impl ChatRequest {
         }
     }
 
+    #[must_use]
     pub fn message(self, message: Msg) -> Self {
         Self {
             messages: {
@@ -258,14 +261,17 @@ impl ChatRequest {
         }
     }
 
+    #[must_use]
     pub fn top_p(self, top_p: f64) -> Self {
         Self { top_p, ..self }
     }
 
+    #[must_use]
     pub fn n(self, n: usize) -> Self {
         Self { n, ..self }
     }
 
+    #[must_use]
     pub fn stop_at(self, stop: impl Into<String>) -> Self {
         Self {
             stop: {
@@ -444,7 +450,7 @@ impl Client {
 
     /// # Errors
     /// Returns `Err` if there is a network error communicating to `OpenAI`
-    pub async fn chat(&self, req: impl Into<ChatRequest>) -> anyhow::Result<String> {
+    pub async fn chat(&self, req: impl Into<ChatRequest> + Send) -> anyhow::Result<String> {
         let req = req.into();
         let response = self.raw_chat(req).await?;
         let choice = response
@@ -653,6 +659,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
+    use approx::relative_eq;
     use futures_util::TryStreamExt;
     use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
@@ -697,7 +704,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_chat() {
-        let req = ChatRequest {
+        let request = ChatRequest {
             model: ChatModel::Turbo,
             messages: vec![
                 Msg {
@@ -713,7 +720,7 @@ mod tests {
             ..ChatRequest::default()
         };
 
-        let res = API.chat(req).await.unwrap();
+        let res = API.chat(request).await.unwrap();
 
         let choice = res
             // prune all non-alphanumeric characters
@@ -734,21 +741,21 @@ mod tests {
     fn test_message() {
         {
             let msg = Msg::system("hello");
-            assert_eq!("hello", format!("{}", msg));
+            assert_eq!("hello", format!("{msg}"));
             let msg = serde_json::to_string(&msg).unwrap();
             assert_eq!(msg, r#"{"role":"system","content":"hello"}"#);
         }
 
         {
             let msg = Msg::user("hello");
-            assert_eq!("hello", format!("{}", msg));
+            assert_eq!("hello", format!("{msg}"));
             let msg = serde_json::to_string(&msg).unwrap();
             assert_eq!(msg, r#"{"role":"user","content":"hello"}"#);
         }
 
         {
             let msg = Msg::assistant("hello");
-            assert_eq!("hello", format!("{}", msg));
+            assert_eq!("hello", format!("{msg}"));
             let msg = serde_json::to_string(&msg).unwrap();
             assert_eq!(msg, r#"{"role":"assistant","content":"hello"}"#);
         }
@@ -767,9 +774,9 @@ mod tests {
             .stop_at("#####");
 
         assert_eq!(req.model, ChatModel::Turbo);
-        assert_eq!(req.temperature, 1.2);
+        assert!(relative_eq!(req.temperature, 1.2));
         assert_eq!(req.messages.len(), 2);
-        assert_eq!(req.top_p, 1.0);
+        assert!(relative_eq!(req.top_p, 1.0));
         assert_eq!(req.n, 3);
         assert_eq!(req.stop, vec!["\n", "#####"]);
     }
@@ -836,7 +843,7 @@ mod tests {
 
         let model = Model::Ada;
         assert_eq!(model.embed_repr().unwrap(), "text-embedding-ada-002");
-        assert_eq!(model.text_repr(), "text-ada-001")
+        assert_eq!(model.text_repr(), "text-ada-001");
     }
 
     #[tokio::test]
