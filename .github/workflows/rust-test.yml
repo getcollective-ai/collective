@@ -23,7 +23,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          components: rustfmt, clippy
+          components: rustfmt, clippy, llvm-tools-preview
           override: true
 
       - name: Cache dependencies
@@ -42,29 +42,15 @@ jobs:
       - name: Run cargo clippy
         run: cargo +nightly clippy --all-targets --all-features -- -D warnings
 
-      - name: Install nextest
-        uses: baptiste0928/cargo-install@v2
-        with:
-          crate: cargo-nextest
-          version: 0.9.50
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
 
-      - name: Run cargo nextest
-        run: cargo nextest run --all-features
+      - name: Collect coverage data
+        run: cargo llvm-cov nextest --lcov --output-path lcov.info
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
-      - name: rust-grcov
-        uses: actions-rs/grcov@v0.1.5
-        env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-
-      - name: Codecov
-        # You may pin to the exact commit or the version.
-        # uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
-        uses: codecov/codecov-action@v3.1.0
+      - name: Upload coverage data to codecov
+        uses: codecov/codecov-action@v3
         with:
-          # Repository upload token - get it from codecov.io. Required only for private repositories
-          # token: # optional
-          # Specify whether the Codecov output should be verbose
-          verbose: true
-          fail_ci_if_error: true
+          files: lcov.info
