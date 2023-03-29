@@ -1,3 +1,2 @@
 [profile.default]
-#retries = { backoff = "exponential", count = 2, delay = "1s", jitter = true }
 slow-timeout = { period = "5s", terminate-after = 3 }
