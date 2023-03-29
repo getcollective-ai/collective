@@ -38,7 +38,7 @@ mod tests {
 
         let base_len = lorem.chars().count();
 
-        let lorem = [lorem].into_iter().cycle();
+        let lorem = std::iter::once(lorem).cycle();
 
         let take = 8000 / base_len;
         let lorem = lorem.take(take).collect::<Vec<_>>().join(" ");

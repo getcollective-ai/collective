@@ -7,7 +7,7 @@ use tokio::process::Command;
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
     }
 }
 
@@ -21,11 +21,11 @@ async fn run() -> anyhow::Result<()> {
 
     let user = Msg::user("Create video caption library");
 
-    let req = ChatRequest::from([system, user]).stop_at("\n");
+    let request = ChatRequest::from([system, user]).stop_at("\n");
 
-    let res = openai.chat(req).await?;
+    let res = openai.chat(request).await?;
 
-    println!("{}", res);
+    println!("{res}");
 
     Ok(())
 }
