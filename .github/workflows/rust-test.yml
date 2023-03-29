@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  CARGO_TERM_COLOR: always
+  CACHED_TOOLCHAIN_PATH: ${{ github.workspace }}/.cargo
+
 jobs:
   rust_ci:
     runs-on: ubuntu-latest
@@ -29,6 +33,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
+            ${{ env.CACHED_TOOLCHAIN_PATH }}/bin
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run cargo fmt
@@ -38,17 +43,20 @@ jobs:
         run: cargo +nightly clippy --all-targets --all-features -- -D warnings
 
       - name: Install nextest
-        run: cargo install cargo-nextest
+        run: |
+          echo "${{ env.CACHED_TOOLCHAIN_PATH }}/bin" >> $GITHUB_PATH
+          cargo install cargo-nextest || echo "cargo-nextest already installed"
 
       - name: Run cargo nextest
         run: cargo nextest run --all-features
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+
       - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin || echo "cargo-tarpaulin already installed"
 
       - name: Run tarpaulin for code coverage
-        run: cargo tarpaulin --skip-clean --out Xml
+        run: cargo tarpaulin --engine llvm --skip-clean --out Xml
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 

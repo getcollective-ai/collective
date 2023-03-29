@@ -22,10 +22,28 @@ pub fn string(input: &str) -> Vec<&str> {
 
 #[cfg(test)]
 mod tests {
+    use super::string;
+
     #[test]
-    fn test_discretize_markdown() {
+    fn test_discretize_simple() {
         let input = "Hello, world!";
-        let res = super::string(input);
+        let res = string(input);
         assert_eq!(vec!["Hello, world!"], res);
+    }
+
+    #[test]
+    fn test_discretize_paragraph() {
+        let lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl \
+                     eget ultricies lacinia, nisl nisl aliquet nisl, eget aliquet nunc";
+
+        let base_len = lorem.chars().count();
+
+        let lorem = [lorem].into_iter().cycle();
+
+        let take = 8000 / base_len;
+        let lorem = lorem.take(take).collect::<Vec<_>>().join(" ");
+
+        let res = string(&lorem);
+        assert_eq!(res.len(), 4);
     }
 }
