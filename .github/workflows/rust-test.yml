@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CACHED_TOOLCHAIN_PATH: ${{ github.workspace }}/.cargo
 
 jobs:
   rust_ci:
@@ -33,7 +32,6 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-            ${{ env.CACHED_TOOLCHAIN_PATH }}/bin
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run cargo fmt
@@ -51,6 +49,7 @@ jobs:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
       - name: Upload coverage data to codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v1
         with:
-          files: lcov.info
+          file: lcov.info
+          fail_ci_if_error: true
