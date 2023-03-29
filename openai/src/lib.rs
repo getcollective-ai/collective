@@ -118,9 +118,10 @@ struct DavinciiData<'a> {
 }
 
 /// The text model we are using. See <https://openai.com/api/pricing/>
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Debug)]
 pub enum Model {
     /// The Davinci model
+    #[default]
     Davinci,
     /// The Curie model
     Curie,
@@ -130,7 +131,7 @@ pub enum Model {
     Ada,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum ChatModel {
     #[serde(rename = "gpt-4")]
     #[default]
@@ -339,7 +340,7 @@ pub struct ChatResponse {
 }
 
 /// The text model we are using. See <https://openai.com/api/pricing/>
-#[derive(Deserialize, Serialize, Copy, Clone, Default)]
+#[derive(Deserialize, Serialize, Copy, Clone, Default, Eq, PartialEq, Debug)]
 #[allow(unused)]
 pub enum Completions {
     /// The Davinci model
@@ -654,11 +655,45 @@ impl Client {
 mod tests {
     use futures_util::TryStreamExt;
     use once_cell::sync::Lazy;
+    use pretty_assertions::assert_eq;
 
-    use crate::{ChatChoice, ChatModel, ChatRequest, Msg, Role};
+    use crate::{ChatChoice, ChatModel, ChatRequest, Completions, Model, Msg, Role};
 
-    static OPENAI: Lazy<crate::Client> =
+    static API: Lazy<crate::Client> =
         Lazy::new(|| crate::Client::simple().expect("could not create client"));
+
+    #[tokio::test]
+    async fn test_chat_raw() {
+        let req = ChatRequest {
+            model: ChatModel::Turbo,
+            messages: vec![
+                Msg {
+                    role: Role::System,
+                    content: "You are a helpful assistant that translates English to French."
+                        .to_string(),
+                },
+                Msg {
+                    role: Role::User,
+                    content: "Translate the following English text to French: Hello".to_string(),
+                },
+            ],
+            ..ChatRequest::default()
+        };
+
+        let choices = API.raw_chat(req).await.unwrap().choices;
+
+        let [ChatChoice { message }] = choices.as_slice() else {
+            panic!("no choices");
+        };
+
+        let message = message
+            // prune all non-alphanumeric characters
+            .content
+            .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+            .to_ascii_lowercase();
+
+        assert_eq!(message, "bonjour");
+    }
 
     #[tokio::test]
     async fn test_chat() {
@@ -678,19 +713,137 @@ mod tests {
             ..ChatRequest::default()
         };
 
-        let choices = OPENAI.raw_chat(req).await.unwrap().choices;
+        let res = API.chat(req).await.unwrap();
 
-        let [ChatChoice { message }] = choices.as_slice() else {
-            panic!("no choices");
-        };
-
-        let message = message
+        let choice = res
             // prune all non-alphanumeric characters
-            .content
             .replace(|c: char| !c.is_ascii_alphanumeric(), "")
             .to_ascii_lowercase();
 
-        assert_eq!(message, "bonjour");
+        assert_eq!(choice, "bonjour");
+    }
+
+    /// test no panic
+    #[test]
+    fn test_text_request() {
+        // test default does not panic
+        let a = crate::TextRequest::default();
+    }
+
+    #[test]
+    fn test_message() {
+        {
+            let msg = Msg::system("hello");
+            assert_eq!("hello", format!("{}", msg));
+            let msg = serde_json::to_string(&msg).unwrap();
+            assert_eq!(msg, r#"{"role":"system","content":"hello"}"#);
+        }
+
+        {
+            let msg = Msg::user("hello");
+            assert_eq!("hello", format!("{}", msg));
+            let msg = serde_json::to_string(&msg).unwrap();
+            assert_eq!(msg, r#"{"role":"user","content":"hello"}"#);
+        }
+
+        {
+            let msg = Msg::assistant("hello");
+            assert_eq!("hello", format!("{}", msg));
+            let msg = serde_json::to_string(&msg).unwrap();
+            assert_eq!(msg, r#"{"role":"assistant","content":"hello"}"#);
+        }
+    }
+
+    #[test]
+    fn test_chat_builder() {
+        let req = ChatRequest::default()
+            .model(ChatModel::Turbo)
+            .temperature(1.2)
+            .message(Msg::system("hello"))
+            .message(Msg::user("hello"))
+            .top_p(1.0)
+            .n(3)
+            .stop_at("\n")
+            .stop_at("#####");
+
+        assert_eq!(req.model, ChatModel::Turbo);
+        assert_eq!(req.temperature, 1.2);
+        assert_eq!(req.messages.len(), 2);
+        assert_eq!(req.top_p, 1.0);
+        assert_eq!(req.n, 3);
+        assert_eq!(req.stop, vec!["\n", "#####"]);
+    }
+
+    #[test]
+    fn test_chat_from() {
+        let req = ChatRequest::from("hello");
+        assert_eq!(req.messages.len(), 1);
+        assert_eq!(req.messages[0].content, "hello");
+        assert_eq!(req.messages[0].role, Role::User);
+        assert_eq!(req.n, 1);
+
+        let req = ChatRequest::from(&"hello".to_string());
+        assert_eq!(req.messages.len(), 1);
+        assert_eq!(req.messages[0].content, "hello");
+        assert_eq!(req.messages[0].role, Role::User);
+        assert_eq!(req.n, 1);
+
+        let messages = [Msg::user("hello"), Msg::assistant("world")];
+        let req = ChatRequest::from(messages.as_slice());
+        assert_eq!(req.messages.len(), 2);
+        assert_eq!(req.messages[0].content, "hello");
+        assert_eq!(req.messages[0].role, Role::User);
+        assert_eq!(req.messages[1].content, "world");
+        assert_eq!(req.messages[1].role, Role::Assistant);
+        assert_eq!(req.n, 1);
+
+        let messages = [Msg::user("hello"), Msg::assistant("world")];
+        let req = ChatRequest::from(messages);
+        assert_eq!(req.messages.len(), 2);
+        assert_eq!(req.messages[0].content, "hello");
+        assert_eq!(req.messages[0].role, Role::User);
+        assert_eq!(req.messages[1].content, "world");
+        assert_eq!(req.messages[1].role, Role::Assistant);
+        assert_eq!(req.n, 1);
+    }
+
+    #[test]
+    fn test_completions() {
+        let completion = Completions::default();
+        assert_eq!(completion, Completions::Davinci);
+    }
+
+    #[test]
+    fn test_chat_model() {
+        let model = ChatModel::default();
+        assert_eq!(model, ChatModel::Gpt4);
+    }
+
+    #[test]
+    fn test_model() {
+        let model = Model::default();
+        assert_eq!(model, Model::Davinci);
+        assert_eq!(model.embed_repr(), None);
+        assert_eq!(model.text_repr(), "text-davinci-003");
+
+        let model = Model::Curie;
+        assert_eq!(model.embed_repr(), None);
+        assert_eq!(model.text_repr(), "text-curie-001");
+
+        let model = Model::Babbage;
+        assert_eq!(model.embed_repr(), None);
+        assert_eq!(model.text_repr(), "text-babbage-001");
+
+        let model = Model::Ada;
+        assert_eq!(model.embed_repr().unwrap(), "text-embedding-ada-002");
+        assert_eq!(model.text_repr(), "text-ada-001")
+    }
+
+    #[tokio::test]
+    async fn test_embed() {
+        let embed_response = API.embed("hello").await.unwrap();
+        // the amount of output dimensions
+        assert_eq!(embed_response.len(), 1536);
     }
 
     #[tokio::test]
@@ -710,7 +863,7 @@ mod tests {
             ..ChatRequest::default()
         };
 
-        let choices = OPENAI.stream_chat(req).await.unwrap();
+        let choices = API.stream_chat(req).await.unwrap();
 
         // convert choices to a vector
         let choices: Vec<_> = choices.try_collect().await.unwrap();
