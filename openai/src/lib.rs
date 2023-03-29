@@ -727,7 +727,7 @@ mod tests {
     #[test]
     fn test_text_request() {
         // test default does not panic
-        let a = crate::TextRequest::default();
+        crate::TextRequest::default();
     }
 
     #[test]
