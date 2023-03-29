@@ -43,9 +43,10 @@ jobs:
         run: cargo +nightly clippy --all-targets --all-features -- -D warnings
 
       - name: Install nextest
-        run: |
-          echo "${{ env.CACHED_TOOLCHAIN_PATH }}/bin" >> $GITHUB_PATH
-          cargo install cargo-nextest || echo "cargo-nextest already installed"
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: cargo-nextest
+          version: 0.9.50
 
       - name: Run cargo nextest
         run: cargo nextest run --all-features
