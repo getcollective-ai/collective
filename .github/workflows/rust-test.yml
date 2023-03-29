@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CACHED_TOOLCHAIN_PATH: ${{ github.workspace }}/.cargo
 
 jobs:
   rust_ci:
@@ -23,18 +22,10 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          components: rustfmt, clippy
+          components: rustfmt, clippy, llvm-tools-preview
           override: true
 
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-            ${{ env.CACHED_TOOLCHAIN_PATH }}/bin
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v2
 
       - name: Run cargo fmt
         run: cargo +nightly fmt --all -- --check
@@ -42,26 +33,16 @@ jobs:
       - name: Run cargo clippy
         run: cargo +nightly clippy --all-targets --all-features -- -D warnings
 
-      - name: Install nextest
-        run: |
-          echo "${{ env.CACHED_TOOLCHAIN_PATH }}/bin" >> $GITHUB_PATH
-          cargo install cargo-nextest || echo "cargo-nextest already installed"
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
 
-      - name: Run cargo nextest
-        run: cargo nextest run --all-features
+      - name: Collect coverage data
+        run: cargo llvm-cov nextest --lcov --output-path lcov.info
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin || echo "cargo-tarpaulin already installed"
-
-      - name: Run tarpaulin for code coverage
-        run: cargo tarpaulin --engine llvm --skip-clean --out Xml
-        env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-
-      - name: Upload coverage to codecov
-        uses: codecov/codecov-action@v1
+      - name: Upload coverage data to codecov
+        uses: codecov/codecov-action@v3
         with:
-          file: cobertura.xml
+          files: lcov.info
           fail_ci_if_error: true
