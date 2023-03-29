@@ -650,71 +650,71 @@ impl Client {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use futures_util::TryStreamExt;
-//     use once_cell::sync::Lazy;
-//
-//     use crate::{ChatChoice, ChatModel, ChatRequest, Msg, Role};
-//
-//     static OPENAI: Lazy<crate::Client> =
-//         Lazy::new(|| crate::Client::simple().expect("could not create client"));
-//
-//     #[tokio::test]
-//     async fn test_chat() {
-//         let req = ChatRequest {
-//             model: ChatModel::Turbo,
-//             messages: vec![
-//                 Msg {
-//                     role: Role::System,
-//                     content: "You are a helpful assistant that translates English to French."
-//                         .to_string(),
-//                 },
-//                 Msg {
-//                     role: Role::User,
-//                     content: "Translate the following English text to French: Hello".to_string(),
-//                 },
-//             ],
-//             ..ChatRequest::default()
-//         };
-//
-//         let choices = OPENAI.raw_chat(req).await.unwrap().choices;
-//
-//         let [ChatChoice { message }] = choices.as_slice() else {
-//             panic!("no choices");
-//         };
-//
-//         let message = message
-//             // prune all non-alphanumeric characters
-//             .content
-//             .replace(|c: char| !c.is_ascii_alphanumeric(), "")
-//             .to_ascii_lowercase();
-//
-//         assert_eq!(message, "bonjour");
-//     }
-//
-//     #[tokio::test]
-//     async fn test_chat_stream() {
-//         let req = ChatRequest {
-//             model: ChatModel::Turbo,
-//             messages: vec![
-//                 Msg {
-//                     role: Role::System,
-//                     content: "You are a helpful assistant".to_string(),
-//                 },
-//                 Msg {
-//                     role: Role::User,
-//                     content: "Translate 'bonjour' to English".to_string(),
-//                 },
-//             ],
-//             ..ChatRequest::default()
-//         };
-//
-//         let choices = OPENAI.stream_chat(req).await.unwrap();
-//
-//         // convert choices to a vector
-//         let choices: Vec<_> = choices.try_collect().await.unwrap();
-//         let choices = choices.join("\n");
-//         assert!(!choices.is_empty());
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use futures_util::TryStreamExt;
+    use once_cell::sync::Lazy;
+
+    use crate::{ChatChoice, ChatModel, ChatRequest, Msg, Role};
+
+    static OPENAI: Lazy<crate::Client> =
+        Lazy::new(|| crate::Client::simple().expect("could not create client"));
+
+    #[tokio::test]
+    async fn test_chat() {
+        let req = ChatRequest {
+            model: ChatModel::Turbo,
+            messages: vec![
+                Msg {
+                    role: Role::System,
+                    content: "You are a helpful assistant that translates English to French."
+                        .to_string(),
+                },
+                Msg {
+                    role: Role::User,
+                    content: "Translate the following English text to French: Hello".to_string(),
+                },
+            ],
+            ..ChatRequest::default()
+        };
+
+        let choices = OPENAI.raw_chat(req).await.unwrap().choices;
+
+        let [ChatChoice { message }] = choices.as_slice() else {
+            panic!("no choices");
+        };
+
+        let message = message
+            // prune all non-alphanumeric characters
+            .content
+            .replace(|c: char| !c.is_ascii_alphanumeric(), "")
+            .to_ascii_lowercase();
+
+        assert_eq!(message, "bonjour");
+    }
+
+    #[tokio::test]
+    async fn test_chat_stream() {
+        let req = ChatRequest {
+            model: ChatModel::Turbo,
+            messages: vec![
+                Msg {
+                    role: Role::System,
+                    content: "You are a helpful assistant".to_string(),
+                },
+                Msg {
+                    role: Role::User,
+                    content: "Translate 'bonjour' to English".to_string(),
+                },
+            ],
+            ..ChatRequest::default()
+        };
+
+        let choices = OPENAI.stream_chat(req).await.unwrap();
+
+        // convert choices to a vector
+        let choices: Vec<_> = choices.try_collect().await.unwrap();
+        let choices = choices.join("\n");
+        assert!(!choices.is_empty());
+    }
+}
