@@ -1,6 +1,10 @@
 # `collective`
 
+
+[**Discord**](https://discord.gg/CzeXcYU8nC)
 [![codecov](https://codecov.io/github/getcollective-ai/collective/branch/main/graph/badge.svg?token=C7HBZAAX3B)](https://app.codecov.io/gh/getcollective-ai/collective)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/getcollective-ai/collective/rust-test.yml?branch=main&style=for-the-badge" height="20">](https://github.com/getcollective-ai/collective/actions?query=branch%3Amain)
+
 
 An AI developer that evolves to fit your needs.
 
