@@ -1,7 +1,13 @@
 [workspace]
-members = ["launcher", "utils", "openai"]
+members = [
+    "code/executor",
+    "code/launcher",
+    "code/openai",
+    "code/utils",
+]
 
 [workspace.dependencies]
-launcher = { path = "launcher" }
-utils = { path = "utils" }
-openai = { path = "openai" }
+executor = { path = "code/executor" }
+launcher = { path = "code/launcher" }
+openai = { path = "code/openai" }
+utils = { path = "code/utils" }
