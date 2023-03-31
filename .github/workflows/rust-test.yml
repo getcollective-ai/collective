@@ -48,16 +48,20 @@ jobs:
           -A clippy::single-match-else
 
 
-      - uses: taiki-e/install-action@cargo-llvm-cov
+#      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install cargo-llvm-cov
+        run: cargo install --git https://github.com/andrewgazelka/cargo-llvm-cov --branch region-coverage-codecov cargo-llvm-cov
+
       - uses: taiki-e/install-action@nextest
 
       - name: Collect coverage data
-        run: cargo llvm-cov nextest --lcov --output-path lcov.info
+        run: cargo llvm-cov nextest --codecov --output-path codecov.json
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
       - name: Upload coverage data to codecov
         uses: codecov/codecov-action@v3
         with:
-          files: lcov.info
+          files: codecov.json
           fail_ci_if_error: true
