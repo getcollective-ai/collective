@@ -4,6 +4,7 @@ members = [
     "code/launcher",
     "code/openai",
     "code/utils",
+    "code/builder",
 ]
 
 [workspace.dependencies]
@@ -11,3 +12,4 @@ executor = { path = "code/executor" }
 launcher = { path = "code/launcher" }
 openai = { path = "code/openai" }
 utils = { path = "code/utils" }
+builder = { path = "code/builder"}
