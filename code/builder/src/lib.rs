@@ -3,12 +3,47 @@ extern crate proc_macro;
 use inflector::string::singularize::to_singular;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, DeriveInput, Path, Type, TypePath};
 
 #[proc_macro_derive(Build, attributes(required))]
 pub fn build_macro_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     impl_build_macro(&ast)
+}
+
+/// remove the `Into` trait from the type if it is an integer because
+/// it makes the API less pretty (we have to explicitly state the integer type)
+fn normalize(input: &Type) -> proc_macro2::TokenStream {
+    match input {
+        Type::Path(TypePath {
+            path: Path { segments, .. },
+            ..
+        }) => {
+            let last_segment = segments.last().unwrap();
+            let ident = &last_segment.ident;
+
+            if ident == "i8"
+                || ident == "i16"
+                || ident == "i32"
+                || ident == "i64"
+                || ident == "i128"
+                || ident == "isize"
+                || ident == "u8"
+                || ident == "u16"
+                || ident == "u32"
+                || ident == "u64"
+                || ident == "u128"
+                || ident == "usize"
+            {
+                quote! { #input }
+            } else {
+                quote! { impl Into<#input> }
+            }
+        }
+        _ => {
+            quote! { impl Into<#input> }
+        }
+    }
 }
 
 fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
@@ -18,7 +53,8 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let required_params = required_fields.iter().map(|field| {
         let field_name = &field.ident;
         let field_type = &field.ty;
-        quote! { #field_name: impl Into<#field_type> }
+        let field_type = normalize(field_type);
+        quote! { #field_name: #field_type }
     });
 
     let required_assignments = required_fields.iter().map(|field| {
@@ -30,12 +66,24 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
         let field_name = &field.ident;
         let field_type = &field.ty;
 
-        if let syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. }) = field_type {
-            if let Some(syn::PathSegment { ident, arguments: syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) }) = segments.first() {
+        if let syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) = field_type
+        {
+            if let Some(syn::PathSegment {
+                ident,
+                arguments:
+                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+                        args, ..
+                    }),
+            }) = segments.first()
+            {
                 if ident == "Option" {
                     if let Some(syn::GenericArgument::Type(inner_type)) = args.first() {
+                        let inner_type = normalize(inner_type);
                         return quote! {
-                            pub fn #field_name(mut self, #field_name: impl Into<#inner_type>) -> Self {
+                            pub fn #field_name(mut self, #field_name: #inner_type) -> Self {
                                 self.#field_name = Some(#field_name.into());
                                 self
                             }
@@ -47,8 +95,9 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
                         let singular = to_singular(&field_name_str);
                         let singular: syn::Ident = syn::parse_str(&singular).unwrap();
 
+                        let inner_type = normalize(inner_type);
                         return quote! {
-                            pub fn #singular(mut self, #singular: impl Into<#inner_type>) -> Self {
+                            pub fn #singular(mut self, #singular: #inner_type) -> Self {
                                 self.#field_name.push(#singular.into());
                                 self
                             }
@@ -58,8 +107,9 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
             }
         }
 
+        let field_type = normalize(field_type);
         quote! {
-            pub fn #field_name(mut self, #field_name: impl Into<#field_type>) -> Self {
+            pub fn #field_name(mut self, #field_name: #field_type) -> Self {
                 self.#field_name = #field_name.into();
                 self
             }
