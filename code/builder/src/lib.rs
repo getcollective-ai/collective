@@ -92,6 +92,6 @@ fn partition_fields(data: &syn::Data) -> (Vec<syn::Field>, Vec<syn::Field>) {
         field
             .attrs
             .iter()
-            .any(|attr| attr.path.is_ident("required"))
+            .any(|attr| attr.path().is_ident("required"))
     })
 }
