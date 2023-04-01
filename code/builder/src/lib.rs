@@ -1,8 +1,9 @@
 extern crate proc_macro;
 
+use inflector::string::singularize::to_singular;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, DeriveInput};
+use syn::{parse_macro_input, DeriveInput};
 
 #[proc_macro_derive(Build, attributes(required))]
 pub fn build_macro_derive(input: TokenStream) -> TokenStream {
@@ -36,6 +37,19 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
                         return quote! {
                             pub fn #field_name(mut self, #field_name: impl Into<#inner_type>) -> Self {
                                 self.#field_name = Some(#field_name.into());
+                                self
+                            }
+                        };
+                    }
+                } else if ident == "Vec" {
+                    if let Some(syn::GenericArgument::Type(inner_type)) = args.first() {
+                        let field_name_str = field_name.clone().unwrap().to_string();
+                        let singular = to_singular(&field_name_str);
+                        let singular: syn::Ident = syn::parse_str(&singular).unwrap();
+
+                        return quote! {
+                            pub fn #singular(mut self, #singular: impl Into<#inner_type>) -> Self {
+                                self.#field_name.push(#singular.into());
                                 self
                             }
                         };
@@ -74,8 +88,10 @@ fn partition_fields(data: &syn::Data) -> (Vec<syn::Field>, Vec<syn::Field>) {
         _ => panic!("Only structs are supported for the Build macro."),
     };
 
-    fields
-        .iter()
-        .cloned()
-        .partition(|field| field.attrs.iter().any(|attr| attr.path.is_ident("required")))
+    fields.iter().cloned().partition(|field| {
+        field
+            .attrs
+            .iter()
+            .any(|attr| attr.path.is_ident("required"))
+    })
 }
