@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{bail, Context};
-use builder::Build;
+use derive_build::Build;
 use derive_more::Constructor;
 use futures_util::{Stream, StreamExt, TryStreamExt};
 pub use reqwest;

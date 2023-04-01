@@ -55,16 +55,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "builder"
-version = "0.1.0"
-dependencies = [
- "Inflector",
- "proc-macro2",
- "quote",
- "syn 2.0.12",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,6 +108,16 @@ checksum = "6d2301688392eb071b0bf1a37be05c469d3cc4dbbd95df672fe28ab021e6a096"
 dependencies = [
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "derive-build"
+version = "0.1.0"
+dependencies = [
+ "Inflector",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.12",
 ]
 
 [[package]]
@@ -653,7 +653,7 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "approx",
- "builder",
+ "derive-build",
  "derive_more",
  "event-stream-processor",
  "futures-util",

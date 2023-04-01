@@ -1,15 +1,15 @@
 [workspace]
 members = [
+    "code/derive-build",
     "code/executor",
     "code/launcher",
     "code/openai",
     "code/utils",
-    "code/builder",
 ]
 
 [workspace.dependencies]
+derive-build = { path = "code/derive-build" }
 executor = { path = "code/executor" }
 launcher = { path = "code/launcher" }
 openai = { path = "code/openai" }
 utils = { path = "code/utils" }
-builder = { path = "code/builder"}
