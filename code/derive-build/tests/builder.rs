@@ -1,4 +1,4 @@
-use builder::Build;
+use derive_build::Build;
 
 #[derive(Default, Build, Eq, PartialEq, Debug)]
 struct Request {

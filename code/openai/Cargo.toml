@@ -16,7 +16,7 @@ tokio = { version = "1.25", features = ["full"] }
 derive_more = "0.99.17"
 utils.workspace = true
 event-stream-processor = "1.0.0"
-builder.workspace = true
+derive-build.workspace = true
 
 [dev-dependencies]
 once_cell = "1.17"
