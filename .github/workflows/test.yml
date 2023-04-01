@@ -46,9 +46,9 @@ jobs:
           -A clippy::module_name_repetitions
           -A clippy::missing_const_for_fn
           -A clippy::single-match-else
+      
 
-
-#      - uses: taiki-e/install-action@cargo-llvm-cov
+      #      - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install cargo-llvm-cov
         run: cargo install --git https://github.com/andrewgazelka/cargo-llvm-cov --branch region-coverage-codecov cargo-llvm-cov
