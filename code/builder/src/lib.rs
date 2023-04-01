@@ -28,6 +28,22 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let optional_methods = optional_fields.iter().map(|field| {
         let field_name = &field.ident;
         let field_type = &field.ty;
+
+        if let syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. }) = field_type {
+            if let Some(syn::PathSegment { ident, arguments: syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) }) = segments.first() {
+                if ident == "Option" {
+                    if let Some(syn::GenericArgument::Type(inner_type)) = args.first() {
+                        return quote! {
+                            pub fn #field_name(mut self, #field_name: impl Into<#inner_type>) -> Self {
+                                self.#field_name = Some(#field_name.into());
+                                self
+                            }
+                        };
+                    }
+                }
+            }
+        }
+
         quote! {
             pub fn #field_name(mut self, #field_name: impl Into<#field_type>) -> Self {
                 self.#field_name = #field_name.into();
