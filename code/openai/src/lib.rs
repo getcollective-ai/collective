@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{bail, Context};
+use builder::Build;
 use derive_more::Constructor;
 use futures_util::{Stream, StreamExt, TryStreamExt};
 pub use reqwest;
@@ -198,7 +199,7 @@ fn real_is_one(input: &f64) -> bool {
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
-const fn int_is_one(input: &usize) -> bool {
+const fn int_is_one(input: &u32) -> bool {
     *input == 1
 }
 
@@ -206,7 +207,7 @@ const fn empty<T>(input: &[T]) -> bool {
     input.is_empty()
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Build)]
 pub struct ChatRequest {
     pub model: ChatModel,
     pub messages: Vec<Msg>,
@@ -229,59 +230,10 @@ pub struct ChatRequest {
 
     /// How many chat completion choices to generate for each input message.
     #[serde(skip_serializing_if = "int_is_one")]
-    pub n: usize,
+    pub n: u32,
 
-    #[serde(skip_serializing_if = "empty")]
-    pub stop: Vec<String>,
-}
-
-impl ChatRequest {
-    #[must_use]
-    pub fn model(self, model: ChatModel) -> Self {
-        Self { model, ..self }
-    }
-
-    #[must_use]
-    pub fn temperature(self, temperature: f64) -> Self {
-        Self {
-            temperature,
-            ..self
-        }
-    }
-
-    #[must_use]
-    pub fn message(self, message: Msg) -> Self {
-        Self {
-            messages: {
-                let mut messages = self.messages;
-                messages.push(message);
-                messages
-            },
-            ..self
-        }
-    }
-
-    #[must_use]
-    pub fn top_p(self, top_p: f64) -> Self {
-        Self { top_p, ..self }
-    }
-
-    #[must_use]
-    pub fn n(self, n: usize) -> Self {
-        Self { n, ..self }
-    }
-
-    #[must_use]
-    pub fn stop_at(self, stop: impl Into<String>) -> Self {
-        Self {
-            stop: {
-                let mut s = self.stop;
-                s.push(stop.into());
-                s
-            },
-            ..self
-        }
-    }
+    #[serde(skip_serializing_if = "empty", rename = "stop")]
+    pub stop_at: Vec<String>,
 }
 
 impl<'a> From<&'a str> for ChatRequest {
@@ -327,7 +279,7 @@ impl Default for ChatRequest {
             temperature: 1.0,
             top_p: 1.0,
             n: 1,
-            stop: Vec::new(),
+            stop_at: Vec::new(),
         }
     }
 }
@@ -778,7 +730,7 @@ mod tests {
         assert_eq!(req.messages.len(), 2);
         assert!(relative_eq!(req.top_p, 1.0));
         assert_eq!(req.n, 3);
-        assert_eq!(req.stop, vec!["\n", "#####"]);
+        assert_eq!(req.stop_at, vec!["\n", "#####"]);
     }
 
     #[test]

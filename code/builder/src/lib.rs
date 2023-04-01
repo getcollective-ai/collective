@@ -66,17 +66,28 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
         }
     });
 
-    let expanded = quote! {
-        impl #name {
-            pub fn new(#(#required_params),*) -> Self {
-                Self {
-                    #(#required_assignments,)*
-                    ..Default::default()
+    let expanded = match required_params.len() == 0 {
+        true => quote! {
+            impl #name {
+                pub fn new() -> Self {
+                    Default::default()
                 }
-            }
 
-            #(#optional_methods)*
-        }
+                #(#optional_methods)*
+            }
+        },
+        false => quote! {
+            impl #name {
+                pub fn new(#(#required_params),*) -> Self {
+                    Self {
+                        #(#required_assignments,)*
+                        ..Default::default()
+                    }
+                }
+
+                #(#optional_methods)*
+            }
+        },
     };
 
     TokenStream::from(expanded)
