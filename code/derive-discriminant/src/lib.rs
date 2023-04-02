@@ -1,12 +1,17 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 #[proc_macro_derive(Discriminant)]
 pub fn discriminant_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
+    impl_discriminant_macro(ast)
+}
+
+fn impl_discriminant_macro(ast: DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let attrs = ast.attrs;
 
