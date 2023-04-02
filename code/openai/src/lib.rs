@@ -150,7 +150,17 @@ pub enum ChatModel {
 /// {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
 /// {"role": "user", "content": "Where was it played?"}
 /// ```
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialOrd,
+    PartialEq,
+    Ord,
+    Eq
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     System,
