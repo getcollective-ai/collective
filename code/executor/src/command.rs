@@ -1,0 +1,35 @@
+//! Commands are executed as such
+//!
+//! ```text
+//! {cmd header}
+//! {args}
+//! ```
+//!
+//! where {cmd data} is one line of RON
+//! but {args} can be several lines
+
+use async_trait::async_trait;
+use derive_discriminant::Discriminant;
+
+use crate::Ctx;
+
+mod bash;
+mod zsh;
+
+/// The command we are executing
+#[derive(Discriminant)]
+enum Cmd {
+    /// a zsh script to execute
+    Zsh,
+    Bash,
+}
+
+#[async_trait]
+trait Command {
+    async fn execute(&self, ctx: Ctx, input: &str) -> anyhow::Result<String>;
+}
+
+fn this_requires_unsize() {
+    let cmd1: Box<dyn Command> = Cmd::Zsh.cast();
+    let cmd2: Box<dyn Command> = Cmd::Bash.cast();
+}

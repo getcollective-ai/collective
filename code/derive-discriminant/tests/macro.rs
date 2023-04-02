@@ -1,3 +1,5 @@
+#![feature(unsize)]
+
 use derive_discriminant::Discriminant;
 
 #[derive(Discriminant)]

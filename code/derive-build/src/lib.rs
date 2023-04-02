@@ -3,9 +3,9 @@ extern crate proc_macro;
 use inflector::string::singularize::to_singular;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Path, Type, TypePath};
+use syn::{parse_macro_input, DeriveInput, Meta, Path, Type, TypePath};
 
-#[proc_macro_derive(Build, attributes(required))]
+#[proc_macro_derive(Build, attributes(required, default))]
 pub fn build_macro_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     impl_build_macro(&ast)
@@ -49,6 +49,28 @@ fn normalize(input: &Type) -> proc_macro2::TokenStream {
 fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let (required_fields, optional_fields) = partition_fields(&ast.data);
+
+    let (optional_fields, optional_defaults): (Vec<_>, Vec<_>) = optional_fields
+        .iter()
+        .map(|field| {
+            let default_value = field
+                .attrs
+                .iter()
+                .find(|attr| attr.path().is_ident("default"))
+                .map(|attr| {
+                    let Meta::NameValue(v)= &attr.meta else {
+                        panic!("only named values allowed for default attribute")
+                    };
+
+                    let v = &v.value;
+
+                    quote!(#v)
+                })
+                .unwrap_or_else(|| quote! { Default::default() });
+
+            (field, default_value)
+        })
+        .unzip();
 
     let required_params = required_fields.iter().map(|field| {
         let field_name = &field.ident;
@@ -116,28 +138,21 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
         }
     });
 
-    let expanded = match required_params.len() == 0 {
-        true => quote! {
-            impl #name {
-                pub fn new() -> Self {
-                    Default::default()
-                }
+    let optional_field_idents = optional_fields.iter().map(|field| &field.ident);
 
-                #(#optional_methods)*
-            }
-        },
-        false => quote! {
-            impl #name {
-                pub fn new(#(#required_params),*) -> Self {
-                    Self {
-                        #(#required_assignments,)*
-                        ..Default::default()
-                    }
+    let expanded = quote! {
+        impl #name {
+            pub fn new(#(#required_params),*) -> Self {
+                Self {
+                    #(#required_assignments,)*
+                    #(
+                        #optional_field_idents: #optional_defaults,
+                    )*
                 }
-
-                #(#optional_methods)*
             }
-        },
+
+            #(#optional_methods)*
+        }
     };
 
     TokenStream::from(expanded)
