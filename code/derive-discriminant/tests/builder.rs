@@ -1,6 +1,7 @@
 use derive_discriminant::Discriminant;
 
-#[derive(Discriminant, Debug, PartialEq, Eq)]
+#[derive(Discriminant)]
+#[derive(Debug, PartialEq, Eq)]
 enum Abc {
     A,
     B { x: usize, y: usize },
