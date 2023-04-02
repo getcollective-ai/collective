@@ -1,6 +1,7 @@
 #![feature(unsize)]
 
 use std::fmt::Debug;
+
 use derive_discriminant::Discriminant;
 
 #[derive(Discriminant)]
@@ -32,7 +33,7 @@ fn test_discriminant_to_abc() {
 }
 
 #[test]
-fn test_cast(){
+fn test_cast() {
     let a = Abc::A;
     let a: Box<dyn Debug> = a.cast();
     assert_eq!(format!("{:?}", a), "A");
