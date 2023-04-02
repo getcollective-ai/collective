@@ -42,3 +42,12 @@ fn test_cast() {
     let b: Box<dyn Debug> = b.cast();
     assert_eq!(format!("{b:?}"), "B { x: 1, y: 2 }");
 }
+
+#[test]
+fn test_is_abc() {
+    assert!(Abc::A.is_a());
+    assert!(!Abc::A.is_b());
+
+    assert!(!Abc::B { x: 1, y: 2 }.is_a());
+    assert!(Abc::B { x: 1, y: 2 }.is_b());
+}
