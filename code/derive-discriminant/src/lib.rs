@@ -10,6 +10,7 @@ pub fn discriminant_derive(input: TokenStream) -> TokenStream {
     impl_discriminant_macro(ast)
 }
 
+#[allow(clippy::too_many_lines)] // TODO: fix too_many_lines allow
 fn impl_discriminant_macro(ast: DeriveInput) -> TokenStream {
     let name = &ast.ident;
 
@@ -59,7 +60,7 @@ fn impl_discriminant_macro(ast: DeriveInput) -> TokenStream {
 
         let is_variant_name: syn::Ident = {
             let lowercase = variant_name.to_string().to_lowercase();
-            let name = format!("is_{}", lowercase);
+            let name = format!("is_{lowercase}");
             syn::parse_str(&name).expect("failed to parse variant name")
         };
 
