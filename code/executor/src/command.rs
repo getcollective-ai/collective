@@ -28,8 +28,3 @@ enum Cmd {
 trait Command {
     async fn execute(&self, ctx: Ctx, input: &str) -> anyhow::Result<String>;
 }
-
-fn this_requires_unsize() {
-    let cmd1: Box<dyn Command> = Cmd::Zsh.cast();
-    let cmd2: Box<dyn Command> = Cmd::Bash.cast();
-}

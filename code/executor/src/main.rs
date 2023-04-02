@@ -1,4 +1,5 @@
 #![feature(unsize)]
+#![allow(unused)]
 
 use std::sync::Arc;
 

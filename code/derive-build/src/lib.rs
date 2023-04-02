@@ -53,20 +53,19 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let (optional_fields, optional_defaults): (Vec<_>, Vec<_>) = optional_fields
         .iter()
         .map(|field| {
-            let default_value = field
+            let Some(default_attr) = field
                 .attrs
                 .iter()
-                .find(|attr| attr.path().is_ident("default"))
-                .map(|attr| {
-                    let Meta::NameValue(v)= &attr.meta else {
-                        panic!("only named values allowed for default attribute")
-                    };
+                .find(|attr| attr.path().is_ident("default")) else {
+                    return (field, quote! { Default::default() });
+            };
 
-                    let v = &v.value;
+            let Meta::NameValue(v)= &default_attr.meta else {
+                panic!("only named values allowed for default attribute")
+            };
 
-                    quote!(#v)
-                })
-                .unwrap_or_else(|| quote! { Default::default() });
+            let v = &v.value;
+            let default_value = quote!(#v);
 
             (field, default_value)
         })
