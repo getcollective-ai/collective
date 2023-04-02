@@ -105,7 +105,7 @@ mod tests {
         let mut set = tokio::task::JoinSet::new();
 
         set.spawn(async {
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(20)).await;
             1
         });
 
@@ -114,7 +114,7 @@ mod tests {
             set.into_stream();
         }
 
-        tokio::time::sleep(Duration::from_millis(1_000)).await;
+        tokio::time::sleep(Duration::from_millis(40)).await;
     }
 
     #[test]
