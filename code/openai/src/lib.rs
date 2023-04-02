@@ -213,6 +213,11 @@ const fn int_is_one(input: &u32) -> bool {
     *input == 1
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
+const fn int_is_zero(input: &u32) -> bool {
+    *input == 0
+}
+
 const fn empty<T>(input: &[T]) -> bool {
     input.is_empty()
 }
@@ -247,6 +252,26 @@ pub struct ChatRequest {
 
     #[serde(skip_serializing_if = "empty", rename = "stop")]
     pub stop_at: Vec<String>,
+
+    /// max tokens to generate
+    ///
+    /// if 0, then no limit
+    #[serde(skip_serializing_if = "int_is_zero")]
+    pub max_tokens: u32,
+}
+
+impl ChatRequest {
+    #[must_use]
+    pub fn sys_msg(mut self, msg: impl Into<String>) -> Self {
+        self.messages.push(Msg::system(msg));
+        self
+    }
+
+    #[must_use]
+    pub fn user_msg(mut self, msg: impl Into<String>) -> Self {
+        self.messages.push(Msg::user(msg));
+        self
+    }
 }
 
 impl Default for ChatRequest {

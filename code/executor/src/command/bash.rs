@@ -27,11 +27,11 @@ impl Command for Bash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{command::Command, Ctx};
+    use crate::{command::Command, ctx, Ctx};
 
     #[tokio::test]
     async fn test_oneline() -> anyhow::Result<()> {
-        let exec = Ctx::default();
+        let exec = ctx()?;
         let cmd = super::Bash;
 
         let output = cmd.execute(exec, "echo hello there").await?;
@@ -43,7 +43,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_multiline() -> anyhow::Result<()> {
-        let exec = Ctx::default();
+        let exec = ctx()?;
         let cmd = super::Bash;
 
         let input = r#"echo hello
