@@ -36,9 +36,9 @@ fn test_discriminant_to_abc() {
 fn test_cast() {
     let a = Abc::A;
     let a: Box<dyn Debug> = a.cast();
-    assert_eq!(format!("{:?}", a), "A");
+    assert_eq!(format!("{a:?}"), "A");
 
     let b = Abc::B { x: 1, y: 2 };
     let b: Box<dyn Debug> = b.cast();
-    assert_eq!(format!("{:?}", b), "B { x: 1, y: 2 }");
+    assert_eq!(format!("{b:?}"), "B { x: 1, y: 2 }");
 }

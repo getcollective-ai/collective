@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 use std::sync::Arc;
+use utils::default;
 
 mod command;
 
@@ -22,7 +23,7 @@ struct Executor {
 impl Executor {
     fn new() -> Self {
         Self {
-            ctx: Default::default(),
+            ctx: default(),
         }
     }
 

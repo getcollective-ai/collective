@@ -25,7 +25,7 @@ mod tests {
         s.trim_end_in_place();
         assert_eq!(s, "hello there");
 
-        let mut s = "".to_string();
+        let mut s = String::new();
         s.trim_end_in_place();
         assert_eq!(s, "");
 
