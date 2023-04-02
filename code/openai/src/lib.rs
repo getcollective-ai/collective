@@ -217,7 +217,7 @@ const fn empty<T>(input: &[T]) -> bool {
     input.is_empty()
 }
 
-#[derive(Serialize, Debug, Build)]
+#[derive(Debug, Build, Serialize)]
 pub struct ChatRequest {
     pub model: ChatModel,
     pub messages: Vec<Msg>,
@@ -228,6 +228,7 @@ pub struct ChatRequest {
     ///
     /// OpenAI generally recommend altering this or top_p but not both.
     #[serde(skip_serializing_if = "real_is_one")]
+    #[default = 1.0]
     pub temperature: f64,
 
     /// An alternative to sampling with temperature, called nucleus sampling, where the model
@@ -236,14 +237,22 @@ pub struct ChatRequest {
     ///
     /// OpenAI generally recommends altering this or temperature but not both.
     #[serde(skip_serializing_if = "real_is_one")]
+    #[default = 1.0]
     pub top_p: f64,
 
     /// How many chat completion choices to generate for each input message.
     #[serde(skip_serializing_if = "int_is_one")]
+    #[default = 1]
     pub n: u32,
 
     #[serde(skip_serializing_if = "empty", rename = "stop")]
     pub stop_at: Vec<String>,
+}
+
+impl Default for ChatRequest {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> From<&'a str> for ChatRequest {
@@ -277,19 +286,6 @@ impl<const N: usize> From<[Msg; N]> for ChatRequest {
         Self {
             messages: input.to_vec(),
             ..default()
-        }
-    }
-}
-
-impl Default for ChatRequest {
-    fn default() -> Self {
-        Self {
-            model: ChatModel::default(),
-            messages: vec![],
-            temperature: 1.0,
-            top_p: 1.0,
-            n: 1,
-            stop_at: Vec::new(),
         }
     }
 }

@@ -4,6 +4,7 @@ use tokio::task::JoinSet;
 use tokio_stream::wrappers::ReceiverStream;
 
 pub mod discretize;
+pub mod str;
 
 // pub type SyncBoxStream<'a, T> = Pin<Box<dyn futures_util::Stream<Item = T> + Send + Sync + 'a>>;
 pub type Stream<T> = futures_util::stream::BoxStream<'static, T>;
