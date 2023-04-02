@@ -32,7 +32,7 @@ fn impl_discriminant_macro(ast: DeriveInput) -> TokenStream {
 
     // implementation for the .cast() method to cast into a trait object
     // this requires nightly
-    let cast = quote! {
+    let cast_method = quote! {
         impl #name {
             fn cast<U: ?Sized>(self) -> Box<U> where #(#variant_names: ::core::marker::Unsize<U>),* {
                 let value = self;
@@ -122,7 +122,7 @@ fn impl_discriminant_macro(ast: DeriveInput) -> TokenStream {
 
     let output = quote! {
         #(#variant_impls)*
-        #cast
+        #cast_method
     };
 
     TokenStream::from(output)
