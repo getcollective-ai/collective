@@ -3,28 +3,30 @@
 
 use std::{io::Write, sync::Arc};
 
-use anyhow::ensure;
-use futures::StreamExt;
+use anyhow::{anyhow, ensure, Result};
+use futures::{stream::BoxStream, StreamExt};
 use openai::ChatRequest;
-use utils::default;
+use utils::{default, Stream};
 
 mod command;
 
 #[tokio::main]
 async fn main() {
-    if let Err(e) = main2().await {
+    let input = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+
+    if let Err(e) = run(input).await {
         eprintln!("{e}");
     }
 }
 
-async fn main2() -> anyhow::Result<()> {
-    let exec = Executor::new()?;
-    let input = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
-
+async fn run(input: impl AsRef<str> + Send) -> Result<Stream<Result<String>>> {
+    let input = input.as_ref();
     ensure!(!input.is_empty(), "no input provided");
 
-    exec.run(&input).await?;
-    Ok(())
+    let exec = Executor::new()?;
+
+    let res = exec.run(input).await?;
+    Ok(res)
 }
 
 type Ctx = Arc<Inner>;
@@ -38,7 +40,7 @@ struct Executor {
 }
 
 /// construct a new context
-fn ctx() -> anyhow::Result<Ctx> {
+fn ctx() -> Result<Ctx> {
     let inner = Inner {
         ai: openai::Client::simple()?,
     };
@@ -47,14 +49,14 @@ fn ctx() -> anyhow::Result<Ctx> {
 }
 
 impl Executor {
-    fn new() -> anyhow::Result<Self> {
+    fn new() -> Result<Self> {
         Ok(Self { ctx: ctx()? })
     }
 }
 
 impl Executor {
     /// run from an input prompt
-    async fn run(&self, input: &str) -> anyhow::Result<()> {
+    async fn run(&self, input: &str) -> Result<utils::Stream<Result<String>>> {
         let sys = "Take in a command and output Rust code that achieves that command. Only output \
                    code. Do not output any other text. Include comments when necessary.";
 
@@ -62,17 +64,81 @@ impl Executor {
 
         let mut res = self.ctx.ai.stream_chat(request).await?;
 
-        let mut res = res.boxed();
+        let res = res.boxed();
 
-        while let Some(msg) = res.next().await {
-            let msg = msg?;
-            print!("{msg}");
+        Ok(res)
+    }
+}
 
-            // flush
-            std::io::stdout().flush()?;
+fn normalize(mut program: String) -> String {
+    // TODO: improve normalization. we only want be trimming the first and last lines
+    // for instance, if there is a comment in the middle of the program that includes triple
+    // backticks, we do not want to replace it
+    program
+        .replace("```rust", "")
+        .replace("```", "")
+        .trim()
+        .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::{bail, ensure};
+    use futures::TryStreamExt;
+    use tokio::{fs::File, io::AsyncWriteExt};
+
+    use crate::{normalize, run};
+
+    /// compiles program and runs it
+    async fn rust_run(program: impl AsRef<str> + Send) -> anyhow::Result<String> {
+        let program = program.as_ref();
+        let dir = tempfile::tempdir_in(std::env::temp_dir())?;
+
+        let dir = dir.path();
+        let file_path = dir.join("main.rs");
+
+        let mut file = File::create(&file_path).await?;
+        file.write_all(program.as_bytes()).await?;
+
+        let output_path = dir.join("main");
+
+        let rustc = tokio::process::Command::new("rustc")
+            .arg(file_path)
+            .arg("-o")
+            .arg(&output_path)
+            .output()
+            .await?;
+
+        if !rustc.status.success() {
+            let err = String::from_utf8(rustc.stderr)?;
+            bail!(err)
         }
 
-        println!();
+        ensure!(output_path.is_file());
+
+        // run command
+        let output = tokio::process::Command::new(output_path).output().await?;
+
+        ensure!(output.status.success());
+
+        let output = String::from_utf8(output.stdout)?;
+
+        Ok(output)
+    }
+
+    #[tokio::test]
+    async fn test_simple_run() -> anyhow::Result<()> {
+        let program = run("add two numbers 2 and 2").await?;
+
+        let program: Vec<_> = program.try_collect().await?;
+        let program = program.join("");
+
+        let program = normalize(program);
+
+        let res = rust_run(&program).await?;
+        let res = res.trim();
+
+        assert!(res.contains('4'));
 
         Ok(())
     }
