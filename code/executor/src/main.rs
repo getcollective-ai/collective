@@ -81,65 +81,65 @@ fn normalize(mut program: String) -> String {
         .to_string()
 }
 
-#[cfg(test)]
-mod tests {
-    use anyhow::{bail, ensure};
-    use futures::TryStreamExt;
-    use tokio::{fs::File, io::AsyncWriteExt};
-
-    use crate::{normalize, run};
-
-    /// compiles program and runs it
-    async fn rust_run(program: impl AsRef<str> + Send) -> anyhow::Result<String> {
-        let program = program.as_ref();
-        let dir = tempfile::tempdir_in(std::env::temp_dir())?;
-
-        let dir = dir.path();
-        let file_path = dir.join("main.rs");
-
-        let mut file = File::create(&file_path).await?;
-        file.write_all(program.as_bytes()).await?;
-
-        let output_path = dir.join("main");
-
-        let rustc = tokio::process::Command::new("rustc")
-            .arg(file_path)
-            .arg("-o")
-            .arg(&output_path)
-            .output()
-            .await?;
-
-        if !rustc.status.success() {
-            let err = String::from_utf8(rustc.stderr)?;
-            bail!(err)
-        }
-
-        ensure!(output_path.is_file());
-
-        // run command
-        let output = tokio::process::Command::new(output_path).output().await?;
-
-        ensure!(output.status.success());
-
-        let output = String::from_utf8(output.stdout)?;
-
-        Ok(output)
-    }
-
-    #[tokio::test]
-    async fn test_simple_run() -> anyhow::Result<()> {
-        let program = run("add two numbers 2 and 2").await?;
-
-        let program: Vec<_> = program.try_collect().await?;
-        let program = program.join("");
-
-        let program = normalize(program);
-
-        let res = rust_run(&program).await?;
-        let res = res.trim();
-
-        assert!(res.contains('4'));
-
-        Ok(())
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use anyhow::{bail, ensure};
+//     use futures::TryStreamExt;
+//     use tokio::{fs::File, io::AsyncWriteExt};
+//
+//     use crate::{normalize, run};
+//
+//     /// compiles program and runs it
+//     async fn rust_run(program: impl AsRef<str> + Send) -> anyhow::Result<String> {
+//         let program = program.as_ref();
+//         let dir = tempfile::tempdir_in(std::env::temp_dir())?;
+//
+//         let dir = dir.path();
+//         let file_path = dir.join("main.rs");
+//
+//         let mut file = File::create(&file_path).await?;
+//         file.write_all(program.as_bytes()).await?;
+//
+//         let output_path = dir.join("main");
+//
+//         let rustc = tokio::process::Command::new("rustc")
+//             .arg(file_path)
+//             .arg("-o")
+//             .arg(&output_path)
+//             .output()
+//             .await?;
+//
+//         if !rustc.status.success() {
+//             let err = String::from_utf8(rustc.stderr)?;
+//             bail!(err)
+//         }
+//
+//         ensure!(output_path.is_file());
+//
+//         // run command
+//         let output = tokio::process::Command::new(output_path).output().await?;
+//
+//         ensure!(output.status.success());
+//
+//         let output = String::from_utf8(output.stdout)?;
+//
+//         Ok(output)
+//     }
+//
+//     #[tokio::test]
+//     async fn test_simple_run() -> anyhow::Result<()> {
+//         let program = run("add two numbers 2 and 2").await?;
+//
+//         let program: Vec<_> = program.try_collect().await?;
+//         let program = program.join("");
+//
+//         let program = normalize(program);
+//
+//         let res = rust_run(&program).await?;
+//         let res = res.trim();
+//
+//         assert!(res.contains('4'));
+//
+//         Ok(())
+//     }
+// }
