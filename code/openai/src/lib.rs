@@ -643,7 +643,6 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use approx::relative_eq;
-    use futures_util::TryStreamExt;
     use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
 
