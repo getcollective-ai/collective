@@ -12,7 +12,7 @@ serde = { version = "1.0", features = ["derive"] }
 futures-util = "0.3.28"
 serde_json = "1.0"
 tokio-stream = "0.1.12"
-tokio = { version = "1.25", features = ["full"] }
+tokio = { version = "1.27", features = ["full"] }
 derive_more = "0.99.17"
 utils.workspace = true
 event-stream-processor = "1.0.0"
