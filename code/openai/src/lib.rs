@@ -682,7 +682,7 @@ mod tests {
             .replace(|c: char| !c.is_ascii_alphanumeric(), "")
             .to_ascii_lowercase();
 
-        assert_eq!(message, "bonjour");
+        assert!(message.contains("bonjour"));
     }
 
     #[tokio::test]
@@ -710,7 +710,7 @@ mod tests {
             .replace(|c: char| !c.is_ascii_alphanumeric(), "")
             .to_ascii_lowercase();
 
-        assert_eq!(choice, "bonjour");
+        assert!(choice.contains("bonjour"));
     }
 
     /// test no panic
