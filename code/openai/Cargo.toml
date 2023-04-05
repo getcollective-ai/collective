@@ -6,7 +6,7 @@ description = "tokio support for OpenAI API"
 license = "MIT"
 
 [dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 futures-util = "0.3.28"
