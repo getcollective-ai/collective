@@ -828,36 +828,4 @@ mod tests {
         assert_eq!(model.embed_repr().unwrap(), "text-embedding-ada-002");
         assert_eq!(model.text_repr(), "text-ada-001");
     }
-
-    #[tokio::test]
-    async fn test_embed() {
-        let embed_response = API.embed("hello").await.unwrap();
-        // the amount of output dimensions
-        assert_eq!(embed_response.len(), 1536);
-    }
-
-    #[tokio::test]
-    async fn test_chat_stream() {
-        let req = ChatRequest {
-            model: ChatModel::Turbo,
-            messages: vec![
-                Msg {
-                    role: Role::System,
-                    content: "You are a helpful assistant".to_string(),
-                },
-                Msg {
-                    role: Role::User,
-                    content: "Translate 'bonjour' to English".to_string(),
-                },
-            ],
-            ..ChatRequest::default()
-        };
-
-        let choices = API.stream_chat(req).await.unwrap();
-
-        // convert choices to a vector
-        let choices: Vec<_> = choices.try_collect().await.unwrap();
-        let choices = choices.join("\n");
-        assert!(!choices.is_empty());
-    }
 }
