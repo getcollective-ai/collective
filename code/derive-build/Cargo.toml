@@ -10,4 +10,4 @@ proc-macro = true
 syn = "2.0.12"
 quote = "1.0"
 Inflector = "0.11.4"
-proc-macro2 = "1.0.54"
+proc-macro2 = "1.0.56"
