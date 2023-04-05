@@ -9,7 +9,7 @@ license = "MIT"
 anyhow = "1.0.69"
 reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
-futures-util = "0.3.26"
+futures-util = "0.3.28"
 serde_json = "1.0"
 tokio-stream = "0.1.12"
 tokio = { version = "1.25", features = ["full"] }
