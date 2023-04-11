@@ -14,3 +14,7 @@ ron = "0.8.0"
 tokio = { version = "1.27.0", features = ["full"] }
 utils.workspace = true
 tempfile = "3.5.0"
+#html5ever = "0.26.0"
+tl = { version = "0.7.7", features = ["simd"] }
+reqwest = "0.11.16"
+

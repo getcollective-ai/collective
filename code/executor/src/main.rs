@@ -33,6 +33,7 @@ type Ctx = Arc<Inner>;
 
 struct Inner {
     ai: openai::Client,
+    req: reqwest::Client,
 }
 
 struct Executor {
@@ -43,6 +44,7 @@ struct Executor {
 fn ctx() -> Result<Ctx> {
     let inner = Inner {
         ai: openai::Client::simple()?,
+        req: reqwest::Client::new(),
     };
 
     Ok(Arc::new(inner))

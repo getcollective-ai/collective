@@ -14,6 +14,7 @@ use derive_discriminant::Discriminant;
 use crate::Ctx;
 
 mod bash;
+mod librs;
 mod zsh;
 
 /// The command we are executing
@@ -21,7 +22,9 @@ mod zsh;
 enum Cmd {
     /// a zsh script to execute
     Zsh,
+    /// a bash script to execute
     Bash,
+    LibRs,
 }
 
 #[async_trait]
