@@ -237,8 +237,10 @@ dependencies = [
  "derive-discriminant",
  "futures",
  "openai",
+ "reqwest",
  "ron",
  "tempfile",
+ "tl",
  "tokio",
  "utils",
 ]
@@ -410,6 +412,20 @@ name = "hermit-abi"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
+
+[[package]]
+name = "html-to-md"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "derive-build",
+ "once_cell",
+ "pretty_assertions",
+ "regex",
+ "reqwest",
+ "tl",
+ "tokio",
+]
 
 [[package]]
 name = "http"
@@ -1129,6 +1145,12 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tl"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5e993a1c7c32fdf90a308cec4d457f507b2573acc909bd6e7a092321664fdb3"
 
 [[package]]
 name = "tokio"

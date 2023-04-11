@@ -3,7 +3,7 @@ extern crate proc_macro;
 use inflector::string::singularize::to_singular;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Meta, Path, Type, TypePath};
+use syn::{parse_macro_input, DeriveInput, Meta, Path, Type, TypePath, TypeReference};
 
 #[proc_macro_derive(Build, attributes(required, default))]
 pub fn build_macro_derive(input: TokenStream) -> TokenStream {
@@ -15,6 +15,10 @@ pub fn build_macro_derive(input: TokenStream) -> TokenStream {
 /// it makes the API less pretty (we have to explicitly state the integer type)
 fn normalize(input: &Type) -> proc_macro2::TokenStream {
     match input {
+        // Handle references differently to avoid using `Into` trait for them
+        Type::Reference(r) => {
+            quote! { #r }
+        }
         Type::Path(TypePath {
             path: Path { segments, .. },
             ..
@@ -48,6 +52,7 @@ fn normalize(input: &Type) -> proc_macro2::TokenStream {
 
 fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
+    let generics = &ast.generics;
     let (required_fields, optional_fields) = partition_fields(&ast.data);
 
     let (optional_fields, optional_defaults): (Vec<_>, Vec<_>) = optional_fields
@@ -140,7 +145,7 @@ fn impl_build_macro(ast: &DeriveInput) -> TokenStream {
     let optional_field_idents = optional_fields.iter().map(|field| &field.ident);
 
     let expanded = quote! {
-        impl #name {
+        impl #generics #name #generics {
             pub fn new(#(#required_params),*) -> Self {
                 Self {
                     #(#required_assignments,)*
