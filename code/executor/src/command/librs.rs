@@ -23,7 +23,7 @@ impl Command for LibRs {
             .context("Failed to parse #readme")?;
 
         let element = element.inner_html(parser);
-        Ok(format!("{}", element))
+        Ok(format!("{element}"))
     }
 }
 
