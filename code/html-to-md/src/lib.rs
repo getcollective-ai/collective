@@ -5,15 +5,15 @@ use regex::Regex;
 use tl::{Node, Parser, ParserOptions};
 
 #[derive(Build)]
-struct HtmlToMd<'a> {
+pub struct HtmlToMd<'a> {
     #[required]
     html: &'a str,
 
-    id: Option<String>,
+    id: Option<&'a str>,
 }
 
 impl HtmlToMd<'_> {
-    fn run(self) -> anyhow::Result<String> {
+    pub fn run(self) -> anyhow::Result<String> {
         let dom = tl::parse(self.html, ParserOptions::default()).context("Failed to parse html")?;
         let parser = dom.parser();
 
@@ -28,7 +28,7 @@ impl HtmlToMd<'_> {
             }
             Some(id) => {
                 let parent = dom
-                    .get_element_by_id(id.as_str())
+                    .get_element_by_id(id)
                     .context("Failed to find find id")?
                     .get(parser)
                     .context("Failed to parse #{id}")?;
@@ -133,7 +133,7 @@ mod tests {
             .text()
             .await?;
 
-        let md = HtmlToMd::new(html).id("readme").run()?;
+        let md = HtmlToMd::new(&html).id("readme").run()?;
 
         println!("{}", md);
         Ok(())
