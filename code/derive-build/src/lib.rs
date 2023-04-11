@@ -3,7 +3,7 @@ extern crate proc_macro;
 use inflector::string::singularize::to_singular;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Meta, Path, Type, TypePath, TypeReference};
+use syn::{parse_macro_input, DeriveInput, Meta, Path, Type, TypePath};
 
 #[proc_macro_derive(Build, attributes(required, default))]
 pub fn build_macro_derive(input: TokenStream) -> TokenStream {
