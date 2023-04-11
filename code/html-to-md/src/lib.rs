@@ -13,6 +13,11 @@ pub struct HtmlToMd<'a> {
 }
 
 impl HtmlToMd<'_> {
+    /// # Errors
+    /// - Failed to parse html
+    /// - Failed to find find id
+    /// - Failed to parse #{id}
+    /// - Failed to parse node
     pub fn run(self) -> anyhow::Result<String> {
         let dom = tl::parse(self.html, ParserOptions::default()).context("Failed to parse html")?;
         let parser = dom.parser();
@@ -60,14 +65,15 @@ fn node_to_md(s: &mut String, node: &Node, parser: &Parser) -> anyhow::Result<()
     Ok(())
 }
 
-pub fn raw_to_md(s: &mut String, raw: &tl::Bytes) {
+fn raw_to_md(s: &mut String, raw: &tl::Bytes) {
     let raw = raw.as_utf8_str();
     let raw = raw.as_ref();
     let raw = raw.replace("&amp;", "&");
     s.push_str(&raw);
 }
 
-pub fn tag_to_md(s: &mut String, tag: &tl::HTMLTag, parser: &Parser) -> anyhow::Result<()> {
+/// # E
+fn tag_to_md(s: &mut String, tag: &tl::HTMLTag, parser: &Parser) -> anyhow::Result<()> {
     let name = tag.name().as_utf8_str();
     let name = name.as_ref();
 
@@ -82,8 +88,7 @@ pub fn tag_to_md(s: &mut String, tag: &tl::HTMLTag, parser: &Parser) -> anyhow::
         "h3" => "### ",
         "h4" => "#### ",
         "h5" => "##### ",
-        "li" => "- ",
-        "ol" => "- ",
+        "li" | "ol" => "- ",
         // "tt" if is_rust => "`",
         "pre" => "```\n",
         _ => "",
@@ -135,7 +140,7 @@ mod tests {
 
         let md = HtmlToMd::new(&html).id("readme").run()?;
 
-        println!("{}", md);
+        println!("{md}");
         Ok(())
     }
 }

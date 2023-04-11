@@ -37,7 +37,7 @@ mod tests {
         let ctx = ctx()?;
         let cmd = LibRs;
         let output = cmd.execute(ctx, "bitflags").await.unwrap();
-        println!("{}", output);
+        println!("{output}");
 
         Ok(())
     }
