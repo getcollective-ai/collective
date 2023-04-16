@@ -1,6 +1,8 @@
 use once_cell::sync::Lazy;
+use protocol::client;
 use regex::Regex;
-use tokio_openai::ChatRequest;
+use tokio_openai::{ChatModel, ChatRequest};
+use tracing::info;
 
 use crate::Executor;
 
@@ -21,8 +23,33 @@ impl QAndA {
         }
     }
 
-    fn chat_request(&self) -> ChatRequest {
+    fn execute_request(&self) -> ChatRequest {
+        let mut message = String::new();
 
+        message.push_str(&format!("Instruction: {}\n\n", self.instruction));
+
+        for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
+            message.push_str(&format!("Q: {}\nA: {}\n\n", question, answer));
+        }
+
+        message.push_str("---\n\n");
+
+        ChatRequest::new()
+            .sys_msg("Execute what is mentioned by the instruction.")
+            .user_msg(message)
+    }
+
+    pub async fn execute(&mut self) -> anyhow::Result<String> {
+        let request = self.execute_request();
+
+        info!("Getting answer from OpenAI...");
+        let answer = self.executor.ctx.ai.chat(request).await?;
+        info!("Answer: {}", answer);
+
+        Ok(answer)
+    }
+
+    fn chat_request(&self) -> ChatRequest {
         let mut message = String::new();
 
         message.push_str(&format!("Instruction: {}\n\n", self.instruction));
@@ -33,16 +60,14 @@ impl QAndA {
 
         message.push_str("Q: ");
 
-        let mut request = ChatRequest::new()
+        ChatRequest::new()
             .stop_at("\n")
             .sys_msg(
                 "list relevant questions that are important for completing the task. One per \
                  line. Only include the raw question text. Do not include any other text. Also \
                  ask questions to correct any mistakes or misunderstandings. The user might have",
             )
-            .user_msg(message);
-
-        request
+            .user_msg(message)
     }
 
     pub async fn gen_question(&mut self) -> anyhow::Result<String> {
@@ -62,7 +87,7 @@ impl QAndA {
 }
 async fn get_question(
     executor: Executor,
-    instruction: protocol::Instruction,
+    instruction: client::Instruction,
 ) -> anyhow::Result<String> {
     let instruction = String::from(instruction);
 
@@ -103,13 +128,15 @@ fn trim_question(question: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use protocol::client;
+
     use crate::{process::question::get_question, Executor};
 
     #[tokio::test]
     async fn test_get_question() -> anyhow::Result<()> {
         let exec = Executor::new()?;
 
-        let instruction = protocol::Instruction {
+        let instruction = client::Instruction {
             instruction: "Create a program that real time does voice translation between Chinese \
                           and English and English and Chinese"
                 .to_string(),

@@ -15,7 +15,7 @@ use futures::{
     SinkExt, StreamExt,
 };
 use once_cell::sync::Lazy;
-use protocol::Server;
+use protocol::{client, server::Server};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tokio_util::sync::CancellationToken;
@@ -225,6 +225,12 @@ impl App {
                     KeyCode::Backspace => {
                         ui.current_line().pop();
                     }
+                    KeyCode::Tab => {
+                        ui.reset();
+                        writer
+                            .write_packet(protocol::Packet::client(client::Execute))
+                            .await?;
+                    }
                     KeyCode::Enter => {
                         if ui.current_line().trim().is_empty() {
                             continue;
@@ -232,11 +238,11 @@ impl App {
                         let packet = match self.instruction {
                             None => {
                                 self.instruction = Some(ui.current_line().clone());
-                                protocol::Packet::client(protocol::Instruction {
+                                protocol::Packet::client(client::Instruction {
                                     instruction: ui.current_line().clone(),
                                 })
                             }
-                            Some(..) => protocol::Packet::client(protocol::Answer {
+                            Some(..) => protocol::Packet::client(client::Answer {
                                 answer: ui.current_line().clone(),
                             }),
                         };
@@ -275,6 +281,11 @@ impl Ui {
         Self {
             input: vec![String::new()],
         }
+    }
+
+    fn reset(&mut self) {
+        self.input.clear();
+        self.input.push(String::new());
     }
 
     fn current_line(&mut self) -> &mut String {
