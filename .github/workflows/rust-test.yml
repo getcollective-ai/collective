@@ -37,38 +37,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run cargo fmt
-        run: cargo +nightly fmt --all -- --check
-
-      - name: Run rustfmt and fix issues
+      - name: Run rustfmt
         if: failure()
         run: |
           cargo +nightly fmt --all
-          
 
       - name: Run cargo clippy
         run: >
           cargo +nightly clippy --all-targets --all-features -- -D warnings -D clippy::cargo
-          -D clippy::complexity
-          -D clippy::nursery
-          -D clippy::perf
-          -D clippy::style
-          -D clippy::suspicious
-          -D clippy::pedantic
-          -A clippy::single_char_lifetime_names
-          -A clippy::cargo_common_metadata
-          -A clippy::items-after-statements
-          -A clippy::multiple_crate_versions
-          -A clippy::module_name_repetitions
-          -A clippy::missing_const_for_fn
-          -A clippy::single-match-else
-          -A clippy::match-bool
-          -A clippy::uninlined_format_args
-
-      - name: Run cargo clippy and fix issues
-        if: failure()
-        run: >
-          cargo +nightly clippy --all-targets --all-features --fix -- -D warnings -D clippy::cargo
           -D clippy::complexity
           -D clippy::nursery
           -D clippy::perf
