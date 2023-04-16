@@ -1,11 +1,11 @@
-# `collective`
-
-![image](https://user-images.githubusercontent.com/7644264/232349641-ee3ae8f1-4a4b-4b83-ac8d-b00cda46931d.png)
+# collective
 
 [**Discord**](https://discord.gg/CzeXcYU8nC)
 [![codecov](https://codecov.io/github/getcollective-ai/collective/branch/main/graph/badge.svg?token=C7HBZAAX3B)](https://app.codecov.io/gh/getcollective-ai/collective)
 [<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/getcollective-ai/collective/rust-test.yml?branch=main&style=for-the-badge" height="20">](https://github.com/getcollective-ai/collective/actions?query=branch%3Amain)
 
+
+![image](https://user-images.githubusercontent.com/7644264/232349641-ee3ae8f1-4a4b-4b83-ac8d-b00cda46931d.png)
 
 An AI developer that evolves to fit your needs.
 
@@ -21,7 +21,7 @@ your programming tasks.
 | Component                     | Technology  |
  |-------------------------------|-------------|
 | Base OS                       | macOS/Unix. |
-| Interface                     | tui-rs      |
+| Interface                     | tui-rs (vim-like)      |
 | Isolation                     | docker      |
 | Isolation Env (OS)            | ubuntu      |
 | Isolation Env (Shell)         | zsh         |
