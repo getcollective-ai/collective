@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use protocol::client;
 use regex::Regex;
-use tokio_openai::{ChatModel, ChatRequest};
+use tokio_openai::ChatRequest;
 use tracing::info;
 
 use crate::Executor;
@@ -23,7 +23,7 @@ impl QAndA {
         }
     }
 
-    fn execute_request(&self) -> ChatRequest {
+    fn plan_request(&self) -> ChatRequest {
         let mut message = String::new();
 
         message.push_str(&format!("Instruction: {}\n\n", self.instruction));
@@ -32,19 +32,22 @@ impl QAndA {
             message.push_str(&format!("Q: {}\nA: {}\n\n", question, answer));
         }
 
-        message.push_str("---\n\n");
+        message.push_str("---\n\nIntricate Plan:\n");
 
         ChatRequest::new()
-            .sys_msg("Execute what is mentioned by the instruction.")
+            .sys_msg(
+                "Plan how to complete the instruction. List one step per line and include \
+                 in-depth explanation on how you think you can best complete the task.",
+            )
             .user_msg(message)
     }
 
-    pub async fn execute(&mut self) -> anyhow::Result<String> {
-        let request = self.execute_request();
+    pub async fn plan(&mut self) -> anyhow::Result<String> {
+        let request = self.plan_request();
 
-        info!("Getting answer from OpenAI...");
+        info!("Getting plan from OpenAI...");
         let answer = self.executor.ctx.ai.chat(request).await?;
-        info!("Answer: {}", answer);
+        info!("Plan:\n{}", answer);
 
         Ok(answer)
     }
