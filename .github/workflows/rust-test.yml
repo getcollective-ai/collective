@@ -55,7 +55,6 @@ jobs:
           -A clippy::single-match-else
           -A clippy::match-bool
 
-      # - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
 
       - name: Install cargo-llvm-cov
