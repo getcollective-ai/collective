@@ -8,7 +8,7 @@ anyhow = "1.0.70"
 async-trait = "0.1.68"
 clap = { version = "4.2.2", features = ["derive"] }
 derive-build = "0.1.1"
-derive-discriminant = "0.1.0"
+derive-discriminant = "0.1.1"
 futures = "0.3.28"
 once_cell = "1.17.1"
 
