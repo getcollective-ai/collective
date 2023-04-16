@@ -257,10 +257,6 @@ impl App {
                         ui.current_line().push_str(&format!("> {question}"));
                         ui.new_line();
 
-
-
-
-
                         waiting_for_question = false;
                     }
                 },
