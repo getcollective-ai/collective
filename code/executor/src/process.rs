@@ -70,6 +70,8 @@ impl Process {
                     bail!("No question to answer");
                 };
 
+                info!("Answer: {}", answer);
+
                 q_and_a.answer(answer);
                 let question = q_and_a.gen_question().await?; // TODO: other packets should be able to be processed
                                                               // while this is running
@@ -85,7 +87,7 @@ impl Process {
                     bail!("No questions to execute on");
                 };
 
-                let res = q_and_a.execute().await?;
+                let res = q_and_a.plan().await?;
 
                 self.write
                     .write(Packet::server(server::Question { question: res }))
