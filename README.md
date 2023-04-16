@@ -1,5 +1,6 @@
 # `collective`
 
+![image](https://user-images.githubusercontent.com/7644264/232349641-ee3ae8f1-4a4b-4b83-ac8d-b00cda46931d.png)
 
 [**Discord**](https://discord.gg/CzeXcYU8nC)
 [![codecov](https://codecov.io/github/getcollective-ai/collective/branch/main/graph/badge.svg?token=C7HBZAAX3B)](https://app.codecov.io/gh/getcollective-ai/collective)
@@ -17,16 +18,16 @@ your programming tasks.
 
 # Speculative Tech Stack
 
-| Component                     | Technology                   |
- |-------------------------------|------------------------------|
-| Base OS                       | macOS (at least)             |
-| Interface                     | NestJS (or maybe native app) |
-| Isolation                     | docker                       |
-| Isolation Env (OS)            | ubuntu                       |
-| Isolation Env (Shell)         | zsh                          |
-| Data (and preference) storage | mongodb                      |
-| Core library, executor        | rust                         |
-| LLM                           | GPT4                         |
+| Component                     | Technology  |
+ |-------------------------------|-------------|
+| Base OS                       | macOS/Unix. |
+| Interface                     | tui-rs      |
+| Isolation                     | docker      |
+| Isolation Env (OS)            | ubuntu      |
+| Isolation Env (Shell)         | zsh         |
+| Data (and preference) storage | mongodb     |
+| Core library, executor        | rust        |
+| LLM                           | GPT4        |
 
 # MVP
 
