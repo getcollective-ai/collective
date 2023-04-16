@@ -4,18 +4,55 @@
 use std::{io::Write, sync::Arc};
 
 use anyhow::{anyhow, ensure, Result};
-use futures::{stream::BoxStream, StreamExt};
-use openai::ChatRequest;
+use clap::Parser;
+use futures::{stream::BoxStream, SinkExt, StreamExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio_openai::ChatRequest;
+use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
+use tracing::info;
 use utils::{default, Stream};
 
+use crate::process::Process;
+
 mod command;
+mod process;
+
+#[derive(Parser)]
+struct Args {
+    #[clap(short, long, default_value = "127.0.0.1")]
+    ip: String,
+
+    #[clap(short, long, default_value = "8080")]
+    port: u16,
+}
 
 #[tokio::main]
 async fn main() {
-    let input = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+    tracing_subscriber::fmt::init();
+    info!("Starting executor");
+    let Args { ip, port } = Args::parse();
 
-    if let Err(e) = run(input).await {
-        eprintln!("{e}");
+    let executor = Executor::new().unwrap();
+
+    let addr = format!("{ip}:{port}");
+
+    let listener = TcpListener::bind(&addr).await.unwrap();
+
+    info!("Listening on: {addr}");
+
+    loop {
+        let (socket, _) = listener.accept().await.unwrap();
+        let ws_stream = accept_async(socket).await.unwrap();
+        info!(
+            "New WebSocket connection: {}",
+            ws_stream.get_ref().peer_addr().unwrap() /* TODO: is this unwrap bad? What if it
+                                                      * panics O_O */
+        );
+
+        let executor = executor.clone();
+        tokio::spawn(async move {
+            handle_client(executor, ws_stream).await;
+        });
     }
 }
 
@@ -32,18 +69,19 @@ async fn run(input: impl AsRef<str> + Send) -> Result<Stream<Result<String>>> {
 type Ctx = Arc<Inner>;
 
 struct Inner {
-    ai: openai::Client,
+    ai: tokio_openai::Client,
     req: reqwest::Client,
 }
 
-struct Executor {
+#[derive(Clone)]
+pub struct Executor {
     ctx: Ctx,
 }
 
 /// construct a new context
 fn ctx() -> Result<Ctx> {
     let inner = Inner {
-        ai: openai::Client::simple()?,
+        ai: tokio_openai::Client::simple()?,
         req: reqwest::Client::new(),
     };
 
@@ -83,65 +121,10 @@ fn normalize(mut program: String) -> String {
         .to_string()
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use anyhow::{bail, ensure};
-//     use futures::TryStreamExt;
-//     use tokio::{fs::File, io::AsyncWriteExt};
-//
-//     use crate::{normalize, run};
-//
-//     /// compiles program and runs it
-//     async fn rust_run(program: impl AsRef<str> + Send) -> anyhow::Result<String> {
-//         let program = program.as_ref();
-//         let dir = tempfile::tempdir_in(std::env::temp_dir())?;
-//
-//         let dir = dir.path();
-//         let file_path = dir.join("main.rs");
-//
-//         let mut file = File::create(&file_path).await?;
-//         file.write_all(program.as_bytes()).await?;
-//
-//         let output_path = dir.join("main");
-//
-//         let rustc = tokio::process::Command::new("rustc")
-//             .arg(file_path)
-//             .arg("-o")
-//             .arg(&output_path)
-//             .output()
-//             .await?;
-//
-//         if !rustc.status.success() {
-//             let err = String::from_utf8(rustc.stderr)?;
-//             bail!(err)
-//         }
-//
-//         ensure!(output_path.is_file());
-//
-//         // run command
-//         let output = tokio::process::Command::new(output_path).output().await?;
-//
-//         ensure!(output.status.success());
-//
-//         let output = String::from_utf8(output.stdout)?;
-//
-//         Ok(output)
-//     }
-//
-//     #[tokio::test]
-//     async fn test_simple_run() -> anyhow::Result<()> {
-//         let program = run("add two numbers 2 and 2").await?;
-//
-//         let program: Vec<_> = program.try_collect().await?;
-//         let program = program.join("");
-//
-//         let program = normalize(program);
-//
-//         let res = rust_run(&program).await?;
-//         let res = res.trim();
-//
-//         assert!(res.contains('4'));
-//
-//         Ok(())
-//     }
-// }
+async fn handle_client(executor: Executor, ws_stream: WebSocketStream<TcpStream>) {
+    let (mut write, mut read) = ws_stream.split();
+
+    let process = Process::new(executor, read, write);
+
+    let res = process.run().await;
+}
