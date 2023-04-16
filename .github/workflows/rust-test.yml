@@ -55,10 +55,11 @@ jobs:
           -A clippy::single-match-else
           -A clippy::match-bool
 
+      # - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
 
       - name: Install cargo-llvm-cov
-        run: cargo install --git https://github.com/andrewgazelka/cargo-llvm-cov --branch fake-branch-coverage cargo-llvm-cov
+        run: cargo install --git https://github.com/andrewgazelka/cargo-llvm-cov --branch codecov-improved-region cargo-llvm-cov
 
       - name: Collect coverage data
         run: cargo llvm-cov nextest --release --codecov --output-path codecov.json
