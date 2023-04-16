@@ -10,11 +10,10 @@
 An AI developer that evolves to fit your needs.
 
 ---
-`collective` is an AI developer that adapts to your coding style.
+`collective` is an AI developer that adapts to your preferences and biases.
 When prompted to create a project, it engages through prompts and questions, improving
-its understanding of
-your preferences. Experience a collaborative, evolving coding partner that continuously refines its abilities to support
-your programming tasks.
+its understanding of you. Collective continuously evolves and refines its abilities to support
+you—transfering its knowledge between independent projects.
 
 # Speculative Tech Stack
 
