@@ -38,7 +38,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Run rustfmt
-        if: failure()
         run: |
           cargo +nightly fmt --all
 
