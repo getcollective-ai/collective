@@ -1,20 +1,24 @@
-use std::{borrow::Cow, error::Error, io};
+use std::{borrow::Cow, error::Error, io, pin::pin, time::Duration};
 
 use anyhow::{bail, Context};
 use clap::Parser;
 use crossterm::{
     cursor,
-    event::{DisableMouseCapture, EnableMouseCapture, KeyCode},
+    event::{poll, DisableMouseCapture, EnableMouseCapture, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{
+    future,
+    future::Either,
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
+use once_cell::sync::Lazy;
 use protocol::Server;
-use tokio::{net::TcpStream, task::JoinHandle};
+use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -24,6 +28,8 @@ use tui::{
     widgets::Widget,
     Frame, Terminal,
 };
+
+static CANCEL_TOKEN: Lazy<CancellationToken> = Lazy::new(CancellationToken::new);
 
 #[derive(Default)]
 struct Label<'a> {
@@ -81,23 +87,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let res = app.run(&mut terminal).await;
 
-    // restore terminal
-    disable_raw_mode()?;
-
     execute!(
         terminal.backend_mut(),
         cursor::SetCursorStyle::SteadyBlock,
         crossterm::cursor::Hide
     )?;
+
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+
     terminal.show_cursor()?;
 
+    // restore terminal
+    disable_raw_mode()?;
+
+    info!("Exiting");
+
+    CANCEL_TOKEN.cancel();
+
     if let Err(err) = res {
-        println!("{err:?}");
+        eprintln!("{err:?}");
     }
 
     Ok(())
@@ -162,25 +174,39 @@ impl App {
 
         let mut writer = Writer { inner: self.write };
 
-        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-        #[allow(clippy::suspicious)]
-        let _: JoinHandle<anyhow::Result<()>> = tokio::spawn({
+        std::thread::spawn({
             let tx = tx.clone();
-            async move {
+            move || {
                 loop {
-                    let event = crossterm::event::read()?;
-                    tx.send(Event::Terminal(event)).await?;
+                    if CANCEL_TOKEN.is_cancelled() {
+                        return;
+                    }
+                    if poll(Duration::from_millis(10)).unwrap() {
+                        // It's guaranteed that `read` won't block, because `poll` returned
+                        // `Ok(true)`.
+
+                        let event = crossterm::event::read().unwrap();
+                        tx.send(Event::Terminal(event)).unwrap();
+                    }
                 }
             }
         });
 
-        #[allow(clippy::suspicious)]
-        let _: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
+        tokio::spawn(async move {
             let mut reader = Reader { inner: self.read };
             loop {
-                let packet = reader.read_packet().await?;
-                tx.send(Event::Packet(packet)).await?;
+                let cancel = pin!(CANCEL_TOKEN.cancelled());
+                let packet = pin!(reader.read_packet());
+                let packet = match future::select(cancel, packet).await {
+                    Either::Left((..)) => {
+                        return;
+                    }
+                    Either::Right((packet, ..)) => packet.unwrap(),
+                };
+
+                tx.send(Event::Packet(packet)).unwrap();
             }
         });
 

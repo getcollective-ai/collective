@@ -54,6 +54,7 @@ jobs:
           -A clippy::missing_const_for_fn
           -A clippy::single-match-else
           -A clippy::match-bool
+          -A clippy::redundant_pub_crate
 
       # - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
