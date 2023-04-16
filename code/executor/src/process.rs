@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::bail;
 use futures::StreamExt;
 use parking_lot::RwLock;
-use protocol::{Client, Packet};
+use protocol::{client::Client, server, ClientPacket, Packet};
 use tracing::info;
 use utils::default;
 
@@ -19,7 +19,7 @@ mod writer;
 #[derive(Default)]
 struct Data {
     instruction: RwLock<Option<String>>,
-    questions: RwLock<Vec<Packet<Client>>>,
+    questions: RwLock<Vec<ClientPacket>>,
 }
 
 impl Data {
@@ -60,7 +60,7 @@ impl Process {
                 info!("Question: {}", question);
 
                 self.write
-                    .write(Packet::server(protocol::Question { question }))
+                    .write(Packet::server(server::Question { question }))
                     .await?;
 
                 self.q_and_a = Some(q_and_a);
@@ -77,7 +77,18 @@ impl Process {
                 info!("Question: {}", question);
 
                 self.write
-                    .write(Packet::server(protocol::Question { question }))
+                    .write(Packet::server(server::Question { question }))
+                    .await?;
+            }
+            Client::Execute => {
+                let Some(q_and_a) = self.q_and_a.as_mut() else {
+                    bail!("No questions to execute on");
+                };
+
+                let res = q_and_a.execute().await?;
+
+                self.write
+                    .write(Packet::server(server::Question { question: res }))
                     .await?;
             }
         }

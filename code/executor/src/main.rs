@@ -126,5 +126,5 @@ async fn handle_client(executor: Executor, ws_stream: WebSocketStream<TcpStream>
 
     let process = Process::new(executor, read, write);
 
-    let res = process.run().await;
+    process.run().await.unwrap();
 }

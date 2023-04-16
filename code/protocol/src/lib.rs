@@ -1,12 +1,12 @@
 #![feature(unsize)]
 
-pub use client::*;
 use serde::{Deserialize, Serialize};
-pub use server::*;
 use uuid::Uuid;
 
-mod client;
-mod server;
+use crate::{client::Client, server::Server};
+
+pub mod client;
+pub mod server;
 
 pub type PacketId = Uuid;
 
