@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.70"
+derive-build = "0.1.1"
 once_cell = "1.17.1"
 regex = "1.7.3"
 tl = { version = "0.7.7", features = ["simd"] }
-derive-build.workspace = true
 
 [dev-dependencies]
 pretty_assertions = "1.3.0"
