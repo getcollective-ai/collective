@@ -22,6 +22,17 @@ impl QAndA {
     }
 
     fn chat_request(&self) -> ChatRequest {
+
+        let mut message = String::new();
+
+        message.push_str(&format!("Instruction: {}\n\n", self.instruction));
+
+        for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
+            message.push_str(&format!("Q: {}\nA: {}\n\n", question, answer));
+        }
+
+        message.push_str("Q: ");
+
         let mut request = ChatRequest::new()
             .stop_at("\n")
             .sys_msg(
@@ -29,11 +40,7 @@ impl QAndA {
                  line. Only include the raw question text. Do not include any other text. Also \
                  ask questions to correct any mistakes or misunderstandings. The user might have",
             )
-            .user_msg(&self.instruction);
-
-        for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
-            request = request.assistant_msg(question).user_msg(answer);
-        }
+            .user_msg(message);
 
         request
     }
