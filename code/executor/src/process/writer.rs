@@ -25,10 +25,7 @@ impl Writer {
         &self.inner
     }
 
-    pub async fn write(
-        &mut self,
-        element: ServerPacket,
-    ) -> anyhow::Result<()> {
+    pub async fn write(&mut self, element: ServerPacket) -> anyhow::Result<()> {
         let s = serde_json::to_string(&element)?;
 
         let message = Message::Text(s);

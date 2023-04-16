@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::bail;
 use futures::StreamExt;
 use parking_lot::RwLock;
-use tracing::info;
 use protocol::{Client, Packet};
+use tracing::info;
 use utils::default;
 
 use crate::{
@@ -53,11 +53,19 @@ impl Process {
         match packet.data {
             Client::Instruction { instruction } => {
                 info!("Instruction: {}", instruction);
-                self.q_and_a = Some(QAndA::new(self.executor.clone(), instruction));
+
+                let mut q_and_a = QAndA::new(self.executor.clone(), instruction);
+                let question = q_and_a.gen_question().await?;
+
+                info!("Question: {}", question);
+
+                self.write
+                    .write(Packet::server(protocol::Question { question }))
+                    .await?;
+
+                self.q_and_a = Some(q_and_a);
             }
-            Client::Answer {
-                answer,
-            } => {
+            Client::Answer { answer } => {
                 let Some(q_and_a) = self.q_and_a.as_mut() else {
                     bail!("No question to answer");
                 };
@@ -65,6 +73,8 @@ impl Process {
                 q_and_a.answer(answer);
                 let question = q_and_a.gen_question().await?; // TODO: other packets should be able to be processed
                                                               // while this is running
+
+                info!("Question: {}", question);
 
                 self.write
                     .write(Packet::server(protocol::Question { question }))

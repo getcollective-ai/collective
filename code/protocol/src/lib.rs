@@ -19,7 +19,6 @@ pub struct Packet<T> {
 pub type ClientPacket = Packet<Client>;
 pub type ServerPacket = Packet<Server>;
 
-
 impl<T> Packet<T> {
     pub fn new(data: T) -> Self {
         Self {

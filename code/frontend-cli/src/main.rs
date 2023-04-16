@@ -106,6 +106,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 struct App {
     write: SplitSink<Ws, Message>,
     read: SplitStream<Ws>,
+    instruction: Option<String>,
 }
 
 struct Writer {
@@ -149,10 +150,14 @@ type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
 impl App {
     fn new(websocket: Ws) -> Self {
         let (write, read) = websocket.split();
-        Self { write, read }
+        Self {
+            write,
+            read,
+            instruction: None,
+        }
     }
 
-    async fn run<B: Backend + Send>(self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
+    async fn run<B: Backend + Send>(mut self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
         let mut ui = Ui::new();
 
         let mut writer = Writer { inner: self.write };
@@ -190,9 +195,17 @@ impl App {
                         ui.current_line().pop();
                     }
                     KeyCode::Enter => {
-                        let packet = protocol::Packet::client(protocol::Instruction {
-                            instruction: ui.current_line().clone(),
-                        });
+                        let packet = match self.instruction {
+                            None => {
+                                self.instruction = Some(ui.current_line().clone());
+                                protocol::Packet::client(protocol::Instruction {
+                                    instruction: ui.current_line().clone(),
+                                })
+                            }
+                            Some(..) => protocol::Packet::client(protocol::Answer {
+                                answer: ui.current_line().clone(),
+                            }),
+                        };
 
                         ui.new_line();
                         writer.write_packet(packet).await?;

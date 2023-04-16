@@ -2,8 +2,8 @@
 
 use anyhow::ensure;
 use log::{error, info};
-use tokio_openai::{ChatRequest, Msg};
 use tokio::process::Command;
+use tokio_openai::{ChatRequest, Msg};
 
 #[tokio::main]
 async fn main() {

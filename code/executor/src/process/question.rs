@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
-use tokio_openai::ChatRequest;
 use regex::Regex;
+use tokio_openai::ChatRequest;
 
 use crate::Executor;
 
@@ -23,6 +23,7 @@ impl QAndA {
 
     fn chat_request(&self) -> ChatRequest {
         let mut request = ChatRequest::new()
+            .stop_at("\n")
             .sys_msg(
                 "list relevant questions that are important for completing the task. One per \
                  line. Only include the raw question text. Do not include any other text. Also \
@@ -33,6 +34,7 @@ impl QAndA {
         for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
             request = request.assistant_msg(question).user_msg(answer);
         }
+
         request
     }
 
