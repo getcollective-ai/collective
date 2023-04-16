@@ -19,6 +19,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Commit all changed files back to the repository
+      - uses: stefanzweifel/git-auto-commit-action@v4
+
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: zsh
@@ -41,11 +44,7 @@ jobs:
         if: failure()
         run: |
           cargo +nightly fmt --all
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-          git add -u
-          git commit -m "Apply rustfmt fixes"
-          git push
+          
 
       - name: Run cargo clippy
         run: >
@@ -68,13 +67,23 @@ jobs:
 
       - name: Run cargo clippy and fix issues
         if: failure()
-        run: |
-          cargo +nightly clippy --all-targets --all-features --fix -- -D warnings -D clippy::cargo -D clippy::complexity -D clippy::nursery -D clippy::perf -D clippy::style -D clippy::suspicious -D clippy::pedantic -A clippy::single_char_lifetime_names -A clippy::cargo_common_metadata -A clippy::items-after-statements -A clippy::multiple_crate_versions -A clippy::module_name_repetitions -A clippy::missing_const_for_fn -A clippy::single-match-else -A clippy::match-bool -A clippy::uninlined_format_args
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-          git add -u
-          git commit -m "Apply clippy fixes"
-          git push
+        run: >
+          cargo +nightly clippy --all-targets --all-features --fix -- -D warnings -D clippy::cargo
+          -D clippy::complexity
+          -D clippy::nursery
+          -D clippy::perf
+          -D clippy::style
+          -D clippy::suspicious
+          -D clippy::pedantic
+          -A clippy::single_char_lifetime_names
+          -A clippy::cargo_common_metadata
+          -A clippy::items-after-statements
+          -A clippy::multiple_crate_versions
+          -A clippy::module_name_repetitions
+          -A clippy::missing_const_for_fn
+          -A clippy::single-match-else
+          -A clippy::match-bool
+          -A clippy::uninlined_format_args
 
       # - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
