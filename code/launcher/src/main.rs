@@ -2,7 +2,7 @@
 
 use anyhow::ensure;
 use log::{error, info};
-use openai::{ChatRequest, Msg};
+use tokio_openai::{ChatRequest, Msg};
 use tokio::process::Command;
 
 #[tokio::main]
