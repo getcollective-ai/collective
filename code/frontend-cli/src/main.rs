@@ -59,8 +59,6 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt::init();
-
     let Args { ip, port } = Args::parse();
 
     let address = format!("ws://{ip}:{port}");
@@ -194,6 +192,8 @@ impl App {
             }
         });
 
+        let mut waiting_for_question = false;
+
         tokio::spawn(async move {
             let mut reader = Reader { inner: self.read };
             loop {
@@ -215,12 +215,20 @@ impl App {
 
             let event = rx.recv().await.context("Failed to receive event")?;
 
+            use crossterm::event::Event::Key as CrossKey;
+
             match event {
-                Event::Terminal(crossterm::event::Event::Key(key)) => match key.code {
+                Event::Terminal(CrossKey(key)) if key.code == KeyCode::Esc => {
+                    return Ok(());
+                }
+                Event::Terminal(CrossKey(key)) if !waiting_for_question => match key.code {
                     KeyCode::Backspace => {
                         ui.current_line().pop();
                     }
                     KeyCode::Enter => {
+                        if ui.current_line().trim().is_empty() {
+                            continue;
+                        }
                         let packet = match self.instruction {
                             None => {
                                 self.instruction = Some(ui.current_line().clone());
@@ -233,14 +241,13 @@ impl App {
                             }),
                         };
 
+                        waiting_for_question = true;
+
                         ui.new_line();
                         writer.write_packet(packet).await?;
                     }
                     KeyCode::Char(c) => {
                         ui.current_line().push(c);
-                    }
-                    KeyCode::Esc => {
-                        return Ok(());
                     }
                     _ => {}
                 },
@@ -249,6 +256,8 @@ impl App {
                         ui.new_line();
                         ui.current_line().push_str(&format!("> {question}"));
                         ui.new_line();
+
+                        waiting_for_question = false;
                     }
                 },
                 Event::Terminal(_) => {}

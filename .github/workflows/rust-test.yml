@@ -13,6 +13,8 @@ env:
 
 jobs:
   rust_ci:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
@@ -34,18 +36,12 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run cargo fmt
-        run: cargo +nightly fmt --all -- --check
-
-      - name: Run rustfmt and fix issues
-        if: failure()
+      - name: Run rustfmt
         run: |
           cargo +nightly fmt --all
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-          git add -u
-          git commit -m "Apply rustfmt fixes"
-          git push
+
+      # Commit all changed files back to the repository
+      - uses: stefanzweifel/git-auto-commit-action@v4
 
       - name: Run cargo clippy
         run: >
@@ -65,16 +61,6 @@ jobs:
           -A clippy::single-match-else
           -A clippy::match-bool
           -A clippy::uninlined_format_args
-
-      - name: Run cargo clippy and fix issues
-        if: failure()
-        run: |
-          cargo +nightly clippy --all-targets --all-features --fix -- -D warnings -D clippy::cargo -D clippy::complexity -D clippy::nursery -D clippy::perf -D clippy::style -D clippy::suspicious -D clippy::pedantic -A clippy::single_char_lifetime_names -A clippy::cargo_common_metadata -A clippy::items-after-statements -A clippy::multiple_crate_versions -A clippy::module_name_repetitions -A clippy::missing_const_for_fn -A clippy::single-match-else -A clippy::match-bool -A clippy::uninlined_format_args
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-          git add -u
-          git commit -m "Apply clippy fixes"
-          git push
 
       # - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
