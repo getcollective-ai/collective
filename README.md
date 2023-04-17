@@ -15,18 +15,22 @@ When prompted to create a project, it engages through prompts and questions, imp
 its understanding of you. Collective continuously evolves and refines its abilities to support
 you—transfering its knowledge between independent projects.
 
+# Running
+
+`cargo run -p frontend-cli`
+
 # Speculative Tech Stack
 
-| Component                     | Technology  |
- |-------------------------------|-------------|
-| Base OS                       | macOS/Unix. |
-| Interface                     | tui-rs (vim-like)      |
-| Isolation                     | docker      |
-| Isolation Env (OS)            | ubuntu      |
-| Isolation Env (Shell)         | zsh         |
-| Data (and preference) storage | mongodb     |
-| Core library, executor        | rust        |
-| LLM                           | GPT4        |
+| Component                     | Technology        |
+ |-------------------------------|-------------------|
+| Base OS                       | macOS/Unix.       |
+| Interface                     | tui-rs (vim-like) |
+| Isolation                     | docker            |
+| Isolation Env (OS)            | ubuntu            |
+| Isolation Env (Shell)         | zsh               |
+| Data (and preference) storage | mongodb           |
+| Core library, executor        | rust              |
+| LLM                           | GPT4              |
 
 # MVP
 

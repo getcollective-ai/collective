@@ -24,6 +24,7 @@ enum Cmd {
     Zsh,
     /// a bash script to execute
     Bash,
+    /// Search for a crate on lib.rs
     LibRs,
 }
 

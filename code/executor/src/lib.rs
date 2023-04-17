@@ -6,8 +6,10 @@ use std::{io::Write, sync::Arc};
 use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 use futures::{stream::BoxStream, SinkExt, StreamExt};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::mpsc::UnboundedReceiver,
+};
 use tokio_openai::ChatRequest;
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
 use tracing::{debug, error, info};
@@ -55,7 +57,7 @@ pub fn launch(args: Args) -> UnboundedReceiver<Event> {
             info!(
                 "New WebSocket connection: {}",
                 ws_stream.get_ref().peer_addr().unwrap() /* TODO: is this unwrap bad? What if it
-                                                  * panics O_O */
+                                                          * panics O_O */
             );
 
             let executor = executor.clone();
