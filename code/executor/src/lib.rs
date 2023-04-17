@@ -7,9 +7,10 @@ use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 use futures::{stream::BoxStream, SinkExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::mpsc::UnboundedReceiver;
 use tokio_openai::ChatRequest;
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
-use tracing::info;
+use tracing::{debug, error, info};
 use utils::{default, Stream};
 
 use crate::process::Process;
@@ -18,42 +19,53 @@ mod command;
 mod process;
 
 #[derive(Parser)]
-struct Args {
+pub struct Args {
     #[clap(short, long, default_value = "127.0.0.1")]
-    ip: String,
+    pub ip: String,
 
     #[clap(short, long, default_value = "8080")]
-    port: u16,
+    pub port: u16,
 }
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt::init();
-    info!("Starting executor");
-    let Args { ip, port } = Args::parse();
+#[derive(Debug, Clone)]
+pub enum Event {
+    Connected,
+}
 
-    let executor = Executor::new().unwrap();
+pub fn launch(args: Args) -> UnboundedReceiver<Event> {
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    tokio::spawn(async move {
+        info!("Starting executor");
 
-    let addr = format!("{ip}:{port}");
+        let executor = Executor::new().unwrap();
 
-    let listener = TcpListener::bind(&addr).await.unwrap();
+        let Args { ip, port } = args;
 
-    info!("Listening on: {addr}");
+        let addr = format!("{ip}:{port}");
 
-    loop {
-        let (socket, _) = listener.accept().await.unwrap();
-        let ws_stream = accept_async(socket).await.unwrap();
-        info!(
-            "New WebSocket connection: {}",
-            ws_stream.get_ref().peer_addr().unwrap() /* TODO: is this unwrap bad? What if it
-                                                      * panics O_O */
-        );
+        let listener = TcpListener::bind(&addr).await.unwrap();
 
-        let executor = executor.clone();
-        tokio::spawn(async move {
-            handle_client(executor, ws_stream).await;
-        });
-    }
+        tx.send(Event::Connected).unwrap();
+
+        info!("Listening on: {addr}");
+
+        loop {
+            let (socket, _) = listener.accept().await.unwrap();
+            let ws_stream = accept_async(socket).await.unwrap();
+            info!(
+                "New WebSocket connection: {}",
+                ws_stream.get_ref().peer_addr().unwrap() /* TODO: is this unwrap bad? What if it
+                                                  * panics O_O */
+            );
+
+            let executor = executor.clone();
+            tokio::spawn(async move {
+                handle_client(executor, ws_stream).await;
+            });
+        }
+    });
+
+    rx
 }
 
 async fn run(input: impl AsRef<str> + Send) -> Result<Stream<Result<String>>> {
@@ -62,7 +74,7 @@ async fn run(input: impl AsRef<str> + Send) -> Result<Stream<Result<String>>> {
 
     let exec = Executor::new()?;
 
-    let res = exec.run(input).await?;
+    let res = exec.run(input).await.unwrap();
     Ok(res)
 }
 
@@ -102,7 +114,7 @@ impl Executor {
 
         let request = ChatRequest::new().sys_msg(sys).user_msg(input);
 
-        let mut res = self.ctx.ai.stream_chat(request).await?;
+        let mut res = self.ctx.ai.stream_chat(request).await.unwrap();
 
         let res = res.boxed();
 
@@ -126,5 +138,7 @@ async fn handle_client(executor: Executor, ws_stream: WebSocketStream<TcpStream>
 
     let process = Process::new(executor, read, write);
 
-    process.run().await.unwrap();
+    if let Err(e) = process.run().await {
+        error!("Error: {}", e);
+    }
 }

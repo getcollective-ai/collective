@@ -55,15 +55,35 @@ struct Args {
     ip: String,
     #[clap(short, long, default_value = "8080")]
     port: u16,
+
+    #[clap(long, default_value = "false")]
+    remote: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let Args { ip, port } = Args::parse();
+    let Args { ip, port, remote } = Args::parse();
+
+    if !remote {
+        // if we're running locally, let's start out own executor
+
+        let ip = ip.clone();
+        let mut events = executor::launch(executor::Args { ip, port });
+
+        while let Some(event) = events.recv().await {
+            match event {
+                executor::Event::Connected => {
+                    info!("Executor connected");
+                    break;
+                }
+            }
+        }
+    }
 
     let address = format!("ws://{ip}:{port}");
 
     info!("Connecting to {address} via websocket...");
+
     let (websocket, _) = connect_async(&address).await.unwrap();
 
     // setup terminal
