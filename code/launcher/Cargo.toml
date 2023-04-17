@@ -1,5 +1,7 @@
 [package]
-name = "launcher"
+name = "collective-ai"
+description = "A launcher for Collective AI"
+license = "MIT"
 version = "0.1.0"
 edition = "2021"
 
