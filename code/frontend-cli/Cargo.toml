@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.70"
 clap = { version = "4.2.2", features = ["derive"] }
 crossterm = "0.26.1"
+executor.workspace = true
 futures = "0.3.28"
 once_cell = "1.17.1"
 protocol.workspace = true

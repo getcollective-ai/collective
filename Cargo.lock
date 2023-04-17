@@ -199,6 +199,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a2dd5a6fe8c6e3502f568a6353e5273bbb15193ad9a89e457b9970798efbea1"
 
 [[package]]
+name = "collective-ai"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "log",
+ "tokio",
+ "tokio-openai",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -483,6 +494,7 @@ dependencies = [
  "anyhow",
  "clap",
  "crossterm 0.26.1",
+ "executor",
  "futures",
  "once_cell",
  "protocol",
@@ -823,17 +835,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "445dde2150c55e483f3d8416706b97ec8e8237c307e5b7b4b8dd15e6af2a0730"
 dependencies = [
  "wasm-bindgen",
-]
-
-[[package]]
-name = "launcher"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger",
- "log",
- "tokio",
- "tokio-openai",
 ]
 
 [[package]]
