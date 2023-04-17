@@ -3,19 +3,21 @@
 
 use std::{io::Write, sync::Arc};
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
+use async_trait::async_trait;
 use clap::Parser;
 use futures::{stream::BoxStream, SinkExt, StreamExt};
+use protocol::{ClientPacket, Packet, ServerPacket};
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::mpsc::UnboundedReceiver,
+    sync::mpsc::{UnboundedReceiver, UnboundedSender},
 };
 use tokio_openai::ChatRequest;
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
 use tracing::{debug, error, info};
 use utils::{default, Stream};
 
-use crate::process::Process;
+use crate::process::{Process, WebSocketComm};
 
 mod command;
 mod process;
@@ -34,7 +36,56 @@ pub enum Event {
     Connected,
 }
 
-pub fn launch(args: Args) -> UnboundedReceiver<Event> {
+#[async_trait]
+pub trait Comm {
+    async fn send(&mut self, packet: ServerPacket) -> anyhow::Result<()>;
+    async fn recv(&mut self) -> anyhow::Result<ClientPacket>;
+}
+
+struct SimpleComm {
+    tx: tokio::sync::mpsc::UnboundedSender<ServerPacket>,
+    rx: tokio::sync::mpsc::UnboundedReceiver<ClientPacket>,
+}
+
+#[async_trait]
+impl Comm for SimpleComm {
+    async fn send(&mut self, packet: ServerPacket) -> anyhow::Result<()> {
+        self.tx.send(packet)?;
+        Ok(())
+    }
+
+    async fn recv(&mut self) -> anyhow::Result<ClientPacket> {
+        self.rx.recv().await.context("Failed to receive packet")
+    }
+}
+
+/// Launch using [`SimpleComm`] and return (tx, rx) for sending and receiving packets.
+pub fn launch() -> (
+    UnboundedSender<ClientPacket>,
+    UnboundedReceiver<ServerPacket>,
+) {
+    let executor = Executor::new().unwrap();
+
+    let (tx1, rx1) = tokio::sync::mpsc::unbounded_channel();
+    let (tx2, rx2) = tokio::sync::mpsc::unbounded_channel();
+
+    let comm = SimpleComm { tx: tx1, rx: rx2 };
+
+    tokio::spawn(async move {
+        handle_client(executor, comm).await;
+    });
+
+    (tx2, rx1)
+}
+
+fn launch_comm(comm: impl Comm + Send + 'static) {
+    let executor = Executor::new().unwrap();
+    tokio::spawn(async move {
+        handle_client(executor, comm).await;
+    });
+}
+
+pub fn launch_websocket(args: Args) -> UnboundedReceiver<Event> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::spawn(async move {
         info!("Starting executor");
@@ -60,9 +111,11 @@ pub fn launch(args: Args) -> UnboundedReceiver<Event> {
                                                           * panics O_O */
             );
 
+            let ws = WebSocketComm::new(ws_stream);
+
             let executor = executor.clone();
             tokio::spawn(async move {
-                handle_client(executor, ws_stream).await;
+                handle_client(executor, ws).await;
             });
         }
     });
@@ -135,10 +188,8 @@ fn normalize(mut program: String) -> String {
         .to_string()
 }
 
-async fn handle_client(executor: Executor, ws_stream: WebSocketStream<TcpStream>) {
-    let (mut write, mut read) = ws_stream.split();
-
-    let process = Process::new(executor, read, write);
+async fn handle_client(executor: Executor, comm: impl Comm) {
+    let process = Process::new(executor, comm);
 
     if let Err(e) = process.run().await {
         error!("Error: {}", e);

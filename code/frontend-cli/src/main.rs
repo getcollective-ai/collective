@@ -1,6 +1,6 @@
 use std::{borrow::Cow, error::Error, io, pin::pin, time::Duration};
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use clap::Parser;
 use crossterm::{
     cursor,
@@ -8,16 +8,10 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use futures::{
-    future,
-    future::Either,
-    stream::{SplitSink, SplitStream},
-    SinkExt, StreamExt,
-};
+use futures::{future, future::Either, SinkExt, StreamExt};
 use once_cell::sync::Lazy;
 use protocol::{client, server::Server};
-use tokio::net::TcpStream;
-use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 use tui::{
@@ -64,27 +58,41 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let Args { ip, port, remote } = Args::parse();
 
-    if !remote {
-        // if we're running locally, let's start out own executor
+    let (tx, rx) = match remote {
+        false => executor::launch(),
 
-        let ip = ip.clone();
-        let mut events = executor::launch(executor::Args { ip, port });
+        true => {
+            let address = format!("ws://{ip}:{port}");
 
-        while let Some(event) = events.recv().await {
-            match event {
-                executor::Event::Connected => {
-                    info!("Executor connected");
-                    break;
+            info!("Connecting to {address} via websocket...");
+
+            let (websocket, _) = connect_async(&address).await.unwrap();
+
+            let (write, read) = websocket.split();
+
+            let (tx1, mut rx1) = tokio::sync::mpsc::unbounded_channel();
+            let (tx2, rx2) = tokio::sync::mpsc::unbounded_channel();
+
+            tokio::spawn(async move {
+                let mut write = write;
+                while let Some(packet) = rx1.recv().await {
+                    let packet = serde_json::to_string(&packet).unwrap();
+                    write.send(Message::Text(packet)).await.unwrap();
                 }
-            }
+            });
+
+            tokio::spawn(async move {
+                let mut read = read;
+                while let Some(packet) = read.next().await {
+                    let packet = packet.unwrap();
+                    let packet = serde_json::from_str(&packet.to_string()).unwrap();
+                    tx2.send(packet).unwrap();
+                }
+            });
+
+            (tx1, rx2)
         }
-    }
-
-    let address = format!("ws://{ip}:{port}");
-
-    info!("Connecting to {address} via websocket...");
-
-    let (websocket, _) = connect_async(&address).await.unwrap();
+    };
 
     // setup terminal
     info!("Setting up terminal");
@@ -101,7 +109,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     // create app and run it
-    let app = App::new(websocket);
+    let app = App::new(tx, rx);
 
     let res = app.run(&mut terminal).await;
 
@@ -134,39 +142,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 struct App {
-    write: SplitSink<Ws, Message>,
-    read: SplitStream<Ws>,
+    tx: tokio::sync::mpsc::UnboundedSender<protocol::ClientPacket>,
+    rx: tokio::sync::mpsc::UnboundedReceiver<protocol::ServerPacket>,
     instruction: Option<String>,
-}
-
-struct Writer {
-    inner: SplitSink<Ws, Message>,
-}
-
-impl Writer {
-    async fn write_packet(&mut self, packet: protocol::ClientPacket) -> anyhow::Result<()> {
-        let msg = serde_json::to_string(&packet)?;
-        self.inner.send(Message::Text(msg)).await?;
-
-        Ok(())
-    }
-}
-
-struct Reader {
-    inner: SplitStream<Ws>,
-}
-
-impl Reader {
-    async fn read_packet(&mut self) -> anyhow::Result<protocol::ServerPacket> {
-        let msg = self.inner.next().await.unwrap()?;
-        let Message::Text(msg) = msg else {
-            bail!("Expected text message, got: {:?}", msg)
-        };
-
-        let res: protocol::ServerPacket = serde_json::from_str(&msg)?;
-
-        Ok(res)
-    }
 }
 
 #[derive(Debug)]
@@ -175,22 +153,20 @@ enum Event {
     Packet(protocol::ServerPacket),
 }
 
-type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
-
 impl App {
-    fn new(websocket: Ws) -> Self {
-        let (write, read) = websocket.split();
+    fn new(
+        tx: tokio::sync::mpsc::UnboundedSender<protocol::ClientPacket>,
+        rx: tokio::sync::mpsc::UnboundedReceiver<protocol::ServerPacket>,
+    ) -> Self {
         Self {
-            write,
-            read,
+            tx,
+            rx,
             instruction: None,
         }
     }
 
     async fn run<B: Backend + Send>(mut self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
         let mut ui = Ui::new();
-
-        let mut writer = Writer { inner: self.write };
 
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
@@ -215,10 +191,10 @@ impl App {
         let mut waiting_for_question = false;
 
         tokio::spawn(async move {
-            let mut reader = Reader { inner: self.read };
+            let mut reader = self.rx;
             loop {
                 let cancel = pin!(CANCEL_TOKEN.cancelled());
-                let packet = pin!(reader.read_packet());
+                let packet = pin!(reader.recv());
                 let packet = match future::select(cancel, packet).await {
                     Either::Left((..)) => {
                         return;
@@ -247,9 +223,7 @@ impl App {
                     }
                     KeyCode::Tab => {
                         ui.reset();
-                        writer
-                            .write_packet(protocol::Packet::client(client::Execute))
-                            .await?;
+                        self.tx.send(protocol::Packet::client(client::Execute))?;
                     }
                     KeyCode::Enter => {
                         if ui.current_line().trim().is_empty() {
@@ -270,7 +244,7 @@ impl App {
                         waiting_for_question = true;
 
                         ui.new_line();
-                        writer.write_packet(packet).await?;
+                        self.tx.send(packet)?;
                     }
                     KeyCode::Char(c) => {
                         ui.current_line().push(c);

@@ -1,20 +1,49 @@
 use std::sync::Arc;
 
 use anyhow::bail;
+use async_trait::async_trait;
 use futures::StreamExt;
 use parking_lot::RwLock;
-use protocol::{client::Client, server, ClientPacket, Packet};
+use protocol::{client::Client, server, ClientPacket, Packet, ServerPacket};
+use tokio::net::TcpStream;
+use tokio_tungstenite::WebSocketStream;
 use tracing::info;
 use utils::default;
 
 use crate::{
     process::{question::QAndA, reader::Reader, writer::Writer},
-    Executor,
+    Comm, Executor,
 };
 
 mod question;
 mod reader;
 mod writer;
+
+pub struct WebSocketComm {
+    reader: Reader,
+    writer: Writer,
+}
+
+impl WebSocketComm {
+    pub fn new(socket: WebSocketStream<TcpStream>) -> Self {
+        let (writer, reader) = socket.split();
+        Self {
+            reader: reader.into(),
+            writer: writer.into(),
+        }
+    }
+}
+
+#[async_trait]
+impl Comm for WebSocketComm {
+    async fn send(&mut self, packet: ServerPacket) -> anyhow::Result<()> {
+        self.writer.write(packet).await
+    }
+
+    async fn recv(&mut self) -> anyhow::Result<ClientPacket> {
+        self.reader.read().await
+    }
+}
 
 #[derive(Default)]
 struct Data {
@@ -28,27 +57,25 @@ impl Data {
     }
 }
 
-pub struct Process {
+pub struct Process<C> {
     executor: Executor,
     q_and_a: Option<QAndA>,
-    read: Reader,
-    write: Writer,
+    comm: C,
     data: Arc<Data>,
 }
 
-impl Process {
-    pub fn new(executor: Executor, read: impl Into<Reader>, write: impl Into<Writer>) -> Self {
+impl<C: Comm> Process<C> {
+    pub fn new(executor: Executor, comm: C) -> Self {
         Self {
             executor,
-            read: read.into(),
-            write: write.into(),
+            comm,
             data: default(),
             q_and_a: None,
         }
     }
 }
 
-impl Process {
+impl<C: Comm> Process<C> {
     async fn process_packet(&mut self, packet: Packet<Client>) -> anyhow::Result<()> {
         match packet.data {
             Client::Instruction { instruction } => {
@@ -59,10 +86,9 @@ impl Process {
 
                 info!("Question: {}", question);
 
-                self.write
-                    .write(Packet::server(server::Question { question }))
+                self.comm
+                    .send(Packet::server(server::Question { question }))
                     .await?;
-
                 self.q_and_a = Some(q_and_a);
             }
             Client::Answer { answer } => {
@@ -78,8 +104,8 @@ impl Process {
 
                 info!("Question: {}", question);
 
-                self.write
-                    .write(Packet::server(server::Question { question }))
+                self.comm
+                    .send(Packet::server(server::Question { question }))
                     .await?;
             }
             Client::Execute => {
@@ -89,8 +115,8 @@ impl Process {
 
                 let res = q_and_a.plan().await?;
 
-                self.write
-                    .write(Packet::server(server::Question { question: res }))
+                self.comm
+                    .send(Packet::server(server::Question { question: res }))
                     .await?;
             }
         }
@@ -99,7 +125,7 @@ impl Process {
 
     pub async fn run(mut self) -> anyhow::Result<()> {
         loop {
-            let packet = self.read.read().await?;
+            let packet = self.comm.recv().await?;
             self.process_packet(packet).await?;
         }
     }
