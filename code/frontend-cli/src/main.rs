@@ -13,7 +13,7 @@ use once_cell::sync::Lazy;
 use protocol::{client, server::Server};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
-use tracing::info;
+use tracing::{debug, info};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
 use tui::{
@@ -85,7 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             info!("Connecting to {address} via websocket...");
 
-            let (websocket, _) = connect_async(&address).await.unwrap();
+            let (websocket, _) = connect_async(&address).await?;
 
             let (write, read) = websocket.split();
 
@@ -95,17 +95,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
             tokio::spawn(async move {
                 let mut write = write;
                 while let Some(packet) = rx1.recv().await {
-                    let packet = serde_json::to_string(&packet).unwrap();
-                    write.send(Message::Text(packet)).await.unwrap();
+                    let packet = match serde_json::to_string(&packet) {
+                        Ok(packet) => packet,
+                        Err(err) => {
+                            debug!("Failed to serialize packet: {}", err);
+                            continue;
+                        }
+                    };
+                    if let Err(e) = write.send(Message::Text(packet)).await {
+                        debug!("Failed to send packet: {}. Shutting down", e);
+                        CANCEL_TOKEN.cancel();
+                    }
                 }
             });
 
             tokio::spawn(async move {
                 let mut read = read;
                 while let Some(packet) = read.next().await {
-                    let packet = packet.unwrap();
-                    let packet = serde_json::from_str(&packet.to_string()).unwrap();
-                    tx2.send(packet).unwrap();
+                    let packet = match packet {
+                        Ok(packet) => packet,
+                        Err(e) => {
+                            debug!("Failed to receive packet: {}. Shutting down", e);
+                            CANCEL_TOKEN.cancel();
+                            break;
+                        }
+                    };
+
+                    let Ok(packet) = serde_json::from_str(&packet.to_string()) else {
+                        debug!("Failed to deserialize packet");
+                        continue;
+                    };
+
+                    if let Err(e) = tx2.send(packet) {
+                        debug!("Failed to send packet: {}. Shutting down", e);
+                        CANCEL_TOKEN.cancel();
+                    }
                 }
             });
 
@@ -184,6 +208,8 @@ impl App {
         }
     }
 
+    // TODO: remove clippy::too_many_lines
+    #[allow(clippy::too_many_lines)]
     async fn run<B: Backend + Send>(mut self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
         let mut ui = Ui::new();
 
@@ -197,11 +223,20 @@ impl App {
                         return;
                     }
                     if poll(Duration::from_millis(10)).unwrap() {
+                        // TODO: handle `unwrap` error in `poll`
                         // It's guaranteed that `read` won't block, because `poll` returned
                         // `Ok(true)`.
 
-                        let event = crossterm::event::read().unwrap();
-                        tx.send(Event::Terminal(event)).unwrap();
+                        let Ok(event) = crossterm::event::read() else {
+                            debug!("Cannot read event from terminal");
+                            continue;
+                        };
+
+                        if let Err(e) = tx.send(Event::Terminal(event)) {
+                            debug!("Cannot send event to terminal -> shutting down: {e:?}");
+                            CANCEL_TOKEN.cancel();
+                            return;
+                        }
                     }
                 }
             }
@@ -218,10 +253,21 @@ impl App {
                     Either::Left((..)) => {
                         return;
                     }
-                    Either::Right((packet, ..)) => packet.unwrap(),
+                    Either::Right((packet, ..)) => {
+                        let Some(packet) = packet else {
+                            debug!("Cannot grab packets -> shutting down");
+                            CANCEL_TOKEN.cancel();
+                            return;
+                        };
+                        packet
+                    }
                 };
 
-                tx.send(Event::Packet(packet)).unwrap();
+                if let Err(e) = tx.send(Event::Packet(packet)) {
+                    debug!("Cannot send packet to terminal -> shutting down: {e:?}");
+                    CANCEL_TOKEN.cancel();
+                    return;
+                }
             }
         });
 

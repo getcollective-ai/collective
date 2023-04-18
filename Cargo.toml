@@ -14,3 +14,8 @@ executor = { path = "code/executor" }
 html-to-md = { path = "code/html-to-md" }
 launcher = { path = "code/launcher" }
 utils = { path = "code/utils" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
