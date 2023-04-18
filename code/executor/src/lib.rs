@@ -60,6 +60,10 @@ impl Comm for SimpleComm {
 }
 
 /// Launch using [`SimpleComm`] and return (tx, rx) for sending and receiving packets.
+///
+/// # Panics
+/// TODO: remove
+#[must_use]
 pub fn launch() -> (
     UnboundedSender<ClientPacket>,
     UnboundedReceiver<ServerPacket>,
@@ -85,6 +89,9 @@ fn launch_comm(comm: impl Comm + Send + 'static) {
     });
 }
 
+/// # Panics
+/// TODO: remove
+#[must_use]
 pub fn launch_websocket(args: Args) -> UnboundedReceiver<Event> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::spawn(async move {
@@ -188,7 +195,7 @@ fn normalize(mut program: String) -> String {
         .to_string()
 }
 
-async fn handle_client(executor: Executor, comm: impl Comm) {
+async fn handle_client(executor: Executor, comm: impl Comm + Send) {
     let process = Process::new(executor, comm);
 
     if let Err(e) = process.run().await {

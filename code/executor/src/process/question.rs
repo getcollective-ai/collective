@@ -29,7 +29,7 @@ impl QAndA {
         message.push_str(&format!("Instruction: {}\n\n", self.instruction));
 
         for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
-            message.push_str(&format!("Q: {}\nA: {}\n\n", question, answer));
+            message.push_str(&format!("Q: {question}\nA: {answer}\n\n"));
         }
 
         message.push_str("---\n\nIntricate Plan:\n");
@@ -58,7 +58,7 @@ impl QAndA {
         message.push_str(&format!("Instruction: {}\n\n", self.instruction));
 
         for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
-            message.push_str(&format!("Q: {}\nA: {}\n\n", question, answer));
+            message.push_str(&format!("Q: {question}\nA: {answer}\n\n"));
         }
 
         message.push_str("Q: ");
