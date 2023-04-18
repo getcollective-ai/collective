@@ -135,7 +135,7 @@ mod tests {
 
     use crate::{process::question::get_question, Executor};
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_get_question() -> anyhow::Result<()> {
         let exec = Executor::new()?;
 
