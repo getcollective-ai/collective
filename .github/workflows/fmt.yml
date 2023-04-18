@@ -33,7 +33,4 @@ jobs:
 
       - name: Run rustfmt
         run: |
-          cargo +nightly fmt --all
-
-      # Commit all changed files back to the repository
-      - uses: stefanzweifel/git-auto-commit-action@v4
+          cargo +nightly fmt --all -- --check
