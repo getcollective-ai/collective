@@ -10,6 +10,7 @@ anyhow = "1.0.70"
 clap = { version = "4.2.2", features = ["derive"] }
 console-subscriber = "0.1.8"
 crossterm = "0.26.1"
+ctrlc = "3.2.5"
 executor.workspace = true
 futures = "0.3.28"
 once_cell = "1.17.1"
