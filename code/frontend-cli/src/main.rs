@@ -53,6 +53,11 @@ async fn main() {
 
     let args = Args::parse();
 
+    ctrlc::set_handler(move || {
+        CANCEL_TOKEN.cancel();
+    })
+    .expect("Error setting Ctrl-C handler");
+
     if let Err(err) = run(args).await {
         error!("{err:?}");
     }
