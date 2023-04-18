@@ -3,7 +3,7 @@ use std::error::Error;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use tokio_util::sync::CancellationToken;
-use tracing::debug;
+use tracing::{error, info};
 
 use crate::app::App;
 
@@ -27,12 +27,10 @@ pub struct Args {
     remote: bool,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    bootstrap::setup_tracing()?;
-    let args = Args::parse();
+async fn run() -> anyhow::Result<()> {
+    info!("Starting frontend-cli");
 
-    debug!("Starting frontend-cli");
+    let args = Args::parse();
 
     let (tx, rx) = comms::setup_comms(&args).await?;
 
@@ -46,8 +44,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // cleanup
     terminal::stop(terminal).await?;
 
-    if let Err(err) = res {
-        eprintln!("{err:?}");
+    res?;
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let _guard = bootstrap::setup_tracing();
+
+    if let Err(err) = run().await {
+        error!("{err:?}");
     }
 
     Ok(())

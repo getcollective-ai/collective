@@ -1,19 +1,16 @@
-use anyhow::Context;
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::EnvFilter;
+use tracing_appender::{
+    non_blocking::WorkerGuard,
+    rolling::{RollingFileAppender, Rotation},
+};
 
-pub fn setup_tracing() -> anyhow::Result<()> {
+pub fn setup_tracing() -> WorkerGuard {
     let rotation = Rotation::DAILY;
     let file_appender = RollingFileAppender::new(rotation, "logs", "trace.log");
 
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(EnvFilter::from_default_env())
-        .with_ansi(false)
+    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(non_blocking)
-        .finish();
+        .init();
 
-    // Set the subscriber as the global tracing subscriber.
-    tracing::subscriber::set_global_default(subscriber)
-        .context("Failed to set global tracing subscriber")
+    guard
 }
