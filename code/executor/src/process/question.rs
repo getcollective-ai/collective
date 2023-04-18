@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use protocol::client;
 use regex::Regex;
 use tokio_openai::ChatRequest;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::Executor;
 
@@ -46,7 +46,17 @@ impl QAndA {
         let request = self.plan_request();
 
         info!("Getting plan from OpenAI...");
-        let answer = self.executor.ctx.ai.chat(request).await?;
+        let answer = match self.executor.ctx.ai.chat(request).await {
+            Ok(answer) => answer,
+            Err(err) => {
+                error!("Error generating plan: {}", err);
+                return Ok(
+                    "Error generating plan. Check logs. (does your API KEY support GPT4?)"
+                        .to_string(),
+                );
+            }
+        };
+
         info!("Plan:\n{}", answer);
 
         Ok(answer)
@@ -76,7 +86,17 @@ impl QAndA {
     pub async fn gen_question(&mut self) -> anyhow::Result<String> {
         let request = self.chat_request();
 
-        let question = self.executor.ctx.ai.chat(request).await?;
+        let question = match self.executor.ctx.ai.chat(request).await {
+            Ok(question) => question,
+            Err(err) => {
+                error!("Error generating question: {}", err);
+                return Ok(
+                    "Error generating question. Check logs. (does your API KEY support GPT4?)"
+                        .to_string(),
+                );
+            }
+        };
+
         let question = trim_question(&question).trim().to_string();
 
         self.questions.push(question.clone());
@@ -131,12 +151,7 @@ fn trim_question(question: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use protocol::client;
-
-    use crate::{
-        process::question::{get_question, QAndA},
-        Executor,
-    };
+    use crate::{process::question::QAndA, Executor};
 
     #[tokio::test]
     async fn test_plan() -> anyhow::Result<()> {
