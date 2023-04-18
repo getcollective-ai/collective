@@ -16,6 +16,6 @@ launcher = { path = "code/launcher" }
 utils = { path = "code/utils" }
 
 [profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
+#lto = true
+#codegen-units = 1
+#panic = "abort"
