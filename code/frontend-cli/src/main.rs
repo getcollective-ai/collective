@@ -3,7 +3,7 @@ use std::error::Error;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::app::App;
 
