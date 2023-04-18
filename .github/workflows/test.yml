@@ -35,16 +35,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
 
-      - name: Collect coverage data
+      - name: Test
         run: cargo nextest run
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-
-      - name: Upload coverage data to codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: codecov.json
-          fail_ci_if_error: true
