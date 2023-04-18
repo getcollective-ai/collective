@@ -1,4 +1,4 @@
-name: Rust CI
+name: Coverage
 
 on:
   push:
@@ -12,9 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust_ci:
-    permissions:
-      contents: write
+  coverage:
     runs-on: ubuntu-latest
 
     steps:

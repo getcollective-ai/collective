@@ -1,4 +1,4 @@
-name: Rust CI
+name: Format
 
 on:
   push:
@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust_ci:
+  fmt:
     permissions:
       contents: write
     runs-on: ubuntu-latest
