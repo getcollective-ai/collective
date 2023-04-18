@@ -133,21 +133,65 @@ fn trim_question(question: &str) -> &str {
 mod tests {
     use protocol::client;
 
-    use crate::{process::question::get_question, Executor};
+    use crate::{
+        process::question::{get_question, QAndA},
+        Executor,
+    };
 
-    // #[tokio::test]
-    async fn test_get_question() -> anyhow::Result<()> {
-        let exec = Executor::new()?;
-
-        let instruction = client::Instruction {
-            instruction: "Create a program that real time does voice translation between Chinese \
-                          and English and English and Chinese"
-                .to_string(),
+    #[tokio::test]
+    async fn test_plan() -> anyhow::Result<()> {
+        let mut q_and_a = QAndA {
+            executor: Executor::new()?,
+            instruction: "Create a simple CLI calculator in 3 steps".to_string(),
+            questions: vec!["Which language should I use?".to_string()],
+            answers: vec!["Rust".to_string()],
         };
 
-        let question = get_question(exec, instruction).await?;
+        let plan = q_and_a.plan().await?;
+        let plan = plan.trim().to_lowercase();
 
-        println!("{}", question);
+        assert!(
+            plan.contains("rust"),
+            "{plan} does not contain the keyword 'rust'"
+        );
+
+        println!("plan:\n{}", plan);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_question() -> anyhow::Result<()> {
+        let mut q_and_a = QAndA::new(Executor::new()?, "Create a calculator");
+        let question = q_and_a.gen_question().await?;
+        let question = question.trim().to_lowercase();
+
+        // question will most likely contain one of these keywords
+        let keywords = &[
+            "basic",
+            "scientific",
+            "language",
+            "gui",
+            "graphical user interface",
+            "command line",
+            "cli",
+            "command-line interface",
+            "web",
+            "web-based",
+            "web-based interface",
+            "web interface",
+            "web-based",
+            "math",
+            "calculator",
+            "function",
+        ];
+
+        let contains_any = keywords.iter().any(|keyword| question.contains(keyword));
+
+        assert!(
+            contains_any,
+            "question: {question} does not contain any mentioned keywords"
+        );
 
         Ok(())
     }
