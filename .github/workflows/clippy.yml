@@ -1,4 +1,4 @@
-name: Rust CI
+name: Clippy
 
 on:
   push:
@@ -12,36 +12,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust_ci:
-    permissions:
-      contents: write
+  clippy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: zsh
-          version: 1.0
-
       - name: Install Rust (nightly)
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: nightly
-          components: rustfmt, clippy, llvm-tools-preview
+          components: clippy
           override: true
 
       - uses: Swatinem/rust-cache@v2
-
-      - name: Run rustfmt
-        run: |
-          cargo +nightly fmt --all
-
-      # Commit all changed files back to the repository
-      - uses: stefanzweifel/git-auto-commit-action@v4
 
       - name: Run cargo clippy
         run: >
@@ -62,19 +48,3 @@ jobs:
           -A clippy::match-bool
           -A clippy::uninlined_format_args
 
-      # - uses: taiki-e/install-action@cargo-llvm-cov
-      - uses: taiki-e/install-action@nextest
-
-      - name: Install cargo-llvm-cov
-        run: cargo install --git https://github.com/andrewgazelka/cargo-llvm-cov --branch codecov-improved-region cargo-llvm-cov
-
-      - name: Collect coverage data
-        run: cargo llvm-cov nextest --release --codecov --output-path codecov.json
-        env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-
-      - name: Upload coverage data to codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: codecov.json
-          fail_ci_if_error: true

@@ -75,7 +75,7 @@ impl<C: Comm> Process<C> {
     }
 }
 
-impl<C: Comm> Process<C> {
+impl<C: Comm + Send> Process<C> {
     async fn process_packet(&mut self, packet: Packet<Client>) -> anyhow::Result<()> {
         match packet.data {
             Client::Instruction { instruction } => {
