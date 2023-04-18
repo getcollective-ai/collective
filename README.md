@@ -5,7 +5,7 @@
 [<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/getcollective-ai/collective/rust-test.yml?branch=main&style=for-the-badge" height="20">](https://github.com/getcollective-ai/collective/actions?query=branch%3Amain)
 
 
-![image](https://user-images.githubusercontent.com/7644264/232349641-ee3ae8f1-4a4b-4b83-ac8d-b00cda46931d.png)
+<img width="1564" alt="image" src="https://user-images.githubusercontent.com/7644264/232889999-7f76cef7-2602-423f-b907-bf943807ece6.png">
 
 An AI developer that evolves to fit your needs.
 
