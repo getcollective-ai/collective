@@ -16,8 +16,9 @@ its understanding of you. Collective continuously evolves and refines its abilit
 you—transfering its knowledge between independent projects.
 
 # Running
-
-`cargo run -p frontend-cli`
+```zsh
+OPENAI_KEY='sk-xxxxxxxxxx' cargo run -p frontend-cli
+```
 
 # Keys
 
