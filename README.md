@@ -19,7 +19,13 @@ you—transfering its knowledge between independent projects.
 
 `cargo run -p frontend-cli`
 
-# Speculative Tech Stack
+# Keys
+
+- `ENTER` submit an answer
+- `TAB` proceed to next step (currently from asking to planning)
+- `ESC` exit the program
+
+# Tech Stack
 
 | Component                     | Technology        |
  |-------------------------------|-------------------|
