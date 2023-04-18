@@ -56,6 +56,8 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    tracing_subscriber::fmt::init();
+
     let Args { ip, port, remote } = Args::parse();
 
     let (tx, rx) = match remote {
