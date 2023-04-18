@@ -3,6 +3,7 @@ use tracing_appender::{
     rolling::{RollingFileAppender, Rotation},
 };
 
+/// Setup tracing to write to a file.
 pub fn setup_tracing() -> WorkerGuard {
     let rotation = Rotation::DAILY;
     let file_appender = RollingFileAppender::new(rotation, "logs", "trace.log");

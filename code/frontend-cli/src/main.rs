@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use clap::Parser;
 use once_cell::sync::Lazy;
 use tokio_util::sync::CancellationToken;
@@ -27,10 +25,8 @@ pub struct Args {
     remote: bool,
 }
 
-async fn run() -> anyhow::Result<()> {
+async fn run(args: Args) -> anyhow::Result<()> {
     info!("Starting frontend-cli");
-
-    let args = Args::parse();
 
     let (tx, rx) = comms::setup_comms(&args).await?;
 
@@ -50,14 +46,16 @@ async fn run() -> anyhow::Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
+    // when this guard is dropped, the file we are writing to
+    // will be flushed and closed.
     let _guard = bootstrap::setup_tracing();
 
-    if let Err(err) = run().await {
+    let args = Args::parse();
+
+    if let Err(err) = run(args).await {
         error!("{err:?}");
     }
-
-    Ok(())
 }
 
 #[derive(Debug)]
