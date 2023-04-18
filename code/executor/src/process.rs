@@ -7,7 +7,7 @@ use parking_lot::RwLock;
 use protocol::{client::Client, server, ClientPacket, Packet, ServerPacket};
 use tokio::net::TcpStream;
 use tokio_tungstenite::WebSocketStream;
-use tracing::info;
+use tracing::{debug, info, instrument};
 use utils::default;
 
 use crate::{
@@ -25,7 +25,9 @@ pub struct WebSocketComm {
 }
 
 impl WebSocketComm {
+    #[instrument(skip(socket))]
     pub fn new(socket: WebSocketStream<TcpStream>) -> Self {
+        debug!("New WebSocket Comm");
         let (writer, reader) = socket.split();
         Self {
             reader: reader.into(),
@@ -77,6 +79,7 @@ impl<C: Comm> Process<C> {
 
 impl<C: Comm> Process<C> {
     async fn process_packet(&mut self, packet: Packet<Client>) -> anyhow::Result<()> {
+        debug!("Processing packet: {:?}", packet);
         match packet.data {
             Client::Instruction { instruction } => {
                 info!("Instruction: {}", instruction);
@@ -123,7 +126,9 @@ impl<C: Comm> Process<C> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn run(mut self) -> anyhow::Result<()> {
+        debug!("Process started");
         loop {
             let packet = self.comm.recv().await?;
             self.process_packet(packet).await?;

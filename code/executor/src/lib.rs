@@ -14,7 +14,7 @@ use tokio::{
 };
 use tokio_openai::ChatRequest;
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 use utils::{default, Stream};
 
 use crate::process::{Process, WebSocketComm};
@@ -59,6 +59,17 @@ impl Comm for SimpleComm {
     }
 }
 
+impl SimpleComm {
+    #[instrument(skip(tx, rx))]
+    pub fn new(
+        tx: tokio::sync::mpsc::UnboundedSender<ServerPacket>,
+        rx: tokio::sync::mpsc::UnboundedReceiver<ClientPacket>,
+    ) -> Self {
+        debug!("New SimpleComm");
+        Self { tx, rx }
+    }
+}
+
 /// Launch using [`SimpleComm`] and return (tx, rx) for sending and receiving packets.
 pub fn launch() -> (
     UnboundedSender<ClientPacket>,
@@ -69,7 +80,7 @@ pub fn launch() -> (
     let (tx1, rx1) = tokio::sync::mpsc::unbounded_channel();
     let (tx2, rx2) = tokio::sync::mpsc::unbounded_channel();
 
-    let comm = SimpleComm { tx: tx1, rx: rx2 };
+    let comm = SimpleComm::new(tx1, rx2);
 
     tokio::spawn(async move {
         handle_client(executor, comm).await;
@@ -188,6 +199,7 @@ fn normalize(mut program: String) -> String {
         .to_string()
 }
 
+#[instrument(skip(executor, comm))]
 async fn handle_client(executor: Executor, comm: impl Comm) {
     let process = Process::new(executor, comm);
 
