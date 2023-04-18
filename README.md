@@ -15,6 +15,8 @@ When prompted to create a project, it engages through prompts and questions, imp
 its understanding of you. Collective continuously evolves and refines its abilities to support
 you—transfering its knowledge between independent projects.
 
+# [📜 Docs](https://github.com/getcollective-ai/docs)
+
 # Running
 ```zsh
 OPENAI_KEY='sk-xxxxxxxxxx' cargo run -p frontend-cli
