@@ -14,6 +14,8 @@ use protocol::{client, server::Server};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_subscriber::EnvFilter;
 use tui::{
     backend::{Backend, CrosstermBackend},
     buffer::Buffer,
@@ -56,12 +58,27 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt::init();
+    let rotation = Rotation::DAILY;
+    let file_appender = RollingFileAppender::new(rotation, "logs", "trace.log");
+
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_ansi(false)
+        .with_writer(non_blocking)
+        .finish();
+
+    // Set the subscriber as the global tracing subscriber.
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set global tracing subscriber");
 
     let Args { ip, port, remote } = Args::parse();
 
     let (tx, rx) = match remote {
-        false => executor::launch(),
+        false => {
+            info!("Launching local executor...");
+            executor::launch()
+        }
 
         true => {
             let address = format!("ws://{ip}:{port}");
