@@ -40,9 +40,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     // cleanup
     terminal::stop(terminal).await?;
 
-    res?;
-
-    Ok(())
+    res
 }
 
 #[tokio::main]
