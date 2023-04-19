@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.70"
-clap = { version = "4.2.2", features = ["derive"] }
+clap = { version = "4.2.4", features = ["derive"] }
 console-subscriber = "0.1.8"
 crossterm = "0.26.1"
 ctrlc = "3.2.5"
