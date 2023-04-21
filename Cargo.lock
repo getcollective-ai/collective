@@ -585,10 +585,12 @@ dependencies = [
  "reqwest",
  "ron",
  "serde_json",
+ "smooth-stream",
  "tempfile",
  "tl",
  "tokio",
  "tokio-openai",
+ "tokio-stream",
  "tokio-tungstenite",
  "tracing",
  "tracing-subscriber",
@@ -1709,6 +1711,18 @@ name = "smallvec"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
+
+[[package]]
+name = "smooth-stream"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca4792653584fbe286075b67eb133ead80d7ed420181dbd47cc80c08457d2a15"
+dependencies = [
+ "async-stream",
+ "futures",
+ "pin-project",
+ "tokio",
+]
 
 [[package]]
 name = "socket2"
