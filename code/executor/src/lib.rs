@@ -1,21 +1,17 @@
 #![feature(unsize)]
-#![allow(unused)]
 
-use std::{io::Write, sync::Arc};
+use std::sync::Arc;
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use clap::Parser;
-use futures::{stream::BoxStream, SinkExt, StreamExt};
-use protocol::{ClientPacket, Packet, ServerPacket};
+use protocol::{ClientPacket, ServerPacket};
 use tokio::{
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
     sync::mpsc::{UnboundedReceiver, UnboundedSender},
 };
-use tokio_openai::ChatRequest;
-use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
-use tracing::{debug, error, info};
-use utils::{default, Stream};
+use tokio_tungstenite::accept_async;
+use tracing::{error, info};
 
 use crate::process::{Process, WebSocketComm};
 
@@ -38,23 +34,23 @@ pub enum Event {
 
 #[async_trait]
 pub trait Comm {
-    async fn send(&mut self, packet: ServerPacket) -> anyhow::Result<()>;
-    async fn recv(&mut self) -> anyhow::Result<ClientPacket>;
+    async fn send(&mut self, packet: ServerPacket) -> Result<()>;
+    async fn recv(&mut self) -> Result<ClientPacket>;
 }
 
 struct SimpleComm {
-    tx: tokio::sync::mpsc::UnboundedSender<ServerPacket>,
-    rx: tokio::sync::mpsc::UnboundedReceiver<ClientPacket>,
+    tx: UnboundedSender<ServerPacket>,
+    rx: UnboundedReceiver<ClientPacket>,
 }
 
 #[async_trait]
 impl Comm for SimpleComm {
-    async fn send(&mut self, packet: ServerPacket) -> anyhow::Result<()> {
+    async fn send(&mut self, packet: ServerPacket) -> Result<()> {
         self.tx.send(packet)?;
         Ok(())
     }
 
-    async fn recv(&mut self) -> anyhow::Result<ClientPacket> {
+    async fn recv(&mut self) -> Result<ClientPacket> {
         self.rx.recv().await.context("Failed to receive packet")
     }
 }
@@ -82,18 +78,11 @@ pub fn launch() -> (
     (tx2, rx1)
 }
 
-fn launch_comm(comm: impl Comm + Send + 'static) {
-    let executor = Executor::new().unwrap();
-    tokio::spawn(async move {
-        handle_client(executor, comm).await;
-    });
-}
-
 /// # Panics
 /// TODO: remove
 #[must_use]
 pub fn launch_websocket(args: Args) -> UnboundedReceiver<Event> {
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::spawn(async move {
         info!("Starting executor");
 
@@ -130,16 +119,6 @@ pub fn launch_websocket(args: Args) -> UnboundedReceiver<Event> {
     rx
 }
 
-async fn run(input: impl AsRef<str> + Send) -> Result<Stream<Result<String>>> {
-    let input = input.as_ref();
-    ensure!(!input.is_empty(), "no input provided");
-
-    let exec = Executor::new()?;
-
-    let res = exec.run(input).await.unwrap();
-    Ok(res)
-}
-
 type Ctx = Arc<Inner>;
 
 struct Inner {
@@ -166,33 +145,6 @@ impl Executor {
     fn new() -> Result<Self> {
         Ok(Self { ctx: ctx()? })
     }
-}
-
-impl Executor {
-    /// run from an input prompt
-    async fn run(&self, input: &str) -> Result<utils::Stream<Result<String>>> {
-        let sys = "Take in a command and output Rust code that achieves that command. Only output \
-                   code. Do not output any other text. Include comments when necessary.";
-
-        let request = ChatRequest::new().sys_msg(sys).user_msg(input);
-
-        let mut res = self.ctx.ai.stream_chat(request).await.unwrap();
-
-        let res = res.boxed();
-
-        Ok(res)
-    }
-}
-
-fn normalize(mut program: String) -> String {
-    // TODO: improve normalization. we only want be trimming the first and last lines
-    // for instance, if there is a comment in the middle of the program that includes triple
-    // backticks, we do not want to replace it
-    program
-        .replace("```rust", "")
-        .replace("```", "")
-        .trim()
-        .to_string()
 }
 
 async fn handle_client(executor: Executor, comm: impl Comm + Send) {

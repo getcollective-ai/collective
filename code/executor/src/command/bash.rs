@@ -27,7 +27,7 @@ impl Command for Bash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{command::Command, ctx, Ctx};
+    use crate::{command::Command, ctx};
 
     #[tokio::test]
     async fn test_oneline() -> anyhow::Result<()> {
