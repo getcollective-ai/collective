@@ -11,15 +11,15 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-permissions:
-  actions: read/write
-  checks: read/write
-  contents: read/write
-  pull-requests: read/write
-  statuses: read/write
 
 jobs:
   clippy:
+    permissions:
+      actions: read/write
+      checks: read/write
+      contents: read/write
+      pull-requests: read/write
+      statuses: read/write
     runs-on: ubuntu-latest
 
     steps:
