@@ -35,6 +35,7 @@ impl App {
     ) -> anyhow::Result<()> {
         let mut ui = Ui::new();
 
+        // channel that handles Events
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
         std::thread::spawn({
@@ -66,6 +67,7 @@ impl App {
 
         let mut waiting_for_question = false;
 
+        // receive a Packet<Server> and emit an Event::Packet(packet<server>)
         tokio::spawn(async move {
             let mut reader = self.rx;
             loop {
@@ -85,6 +87,8 @@ impl App {
                     }
                 };
 
+                // grab the packet, wrap it into an Event.
+                // send to the loop below
                 if let Err(e) = tx.send(Event::Packet(packet)) {
                     debug!("Cannot send packet to terminal -> shutting down: {e:?}");
                     CANCEL_TOKEN.cancel();
@@ -93,6 +97,8 @@ impl App {
             }
         });
 
+        // handle all events, including events received from above
+        // and send a Packet<Client> to the executor `fn process_packet`?
         loop {
             terminal.draw(|frame| ui.run(frame))?;
 
@@ -108,15 +114,14 @@ impl App {
                     KeyCode::Backspace => {
                         ui.current_line().pop();
                     }
-                    KeyCode::Tab => {
-                        ui.reset();
-                        self.tx.send(protocol::Packet::client(client::Execute))?;
-                    }
                     KeyCode::Enter => {
                         if ui.current_line().trim().is_empty() {
                             continue;
                         }
                         let packet = match self.instruction {
+                            // instruction will only be None
+                            // on the very first prompt of the user on the terminal
+                            // all the subsequent prompts will be Some
                             None => {
                                 self.instruction = Some(ui.current_line().clone());
                                 protocol::Packet::client(client::Instruction {
@@ -138,13 +143,30 @@ impl App {
                     }
                     _ => {}
                 },
+                // answers sent from GPT to the frontend
+                // are handled here
                 Event::Packet(packet) => match packet.data {
-                    Server::Question { question } => {
-                        ui.new_line();
-                        ui.current_line().push_str(&format!("> {question}"));
-                        ui.new_line();
-
-                        waiting_for_question = false;
+                    Server::Question {
+                        question,
+                        is_first_word,
+                        is_last_word,
+                    } => {
+                        if is_first_word || is_last_word {
+                            ui.new_line();
+                        }
+                        // is first word, meaning this is the
+                        // beggining of a new question
+                        if is_first_word {
+                            ui.current_line().push_str(&format!("> {question}"));
+                        }
+                        // is not first word, meaning the next words
+                        // are the contiunation of the previous question
+                        if !is_first_word {
+                            ui.current_line().push_str(question.as_str());
+                        }
+                        if is_last_word {
+                            waiting_for_question = false;
+                        }
                     }
                 },
                 Event::Terminal(_) => {}

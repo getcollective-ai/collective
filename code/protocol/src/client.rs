@@ -8,8 +8,6 @@ pub enum Client {
     Instruction { instruction: String },
     /// Answer a question.
     Answer { answer: String },
-    /// Execute based on the instructions.
-    Execute,
 }
 
 impl From<Instruction> for String {
