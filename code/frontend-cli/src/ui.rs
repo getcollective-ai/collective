@@ -13,6 +13,7 @@ impl Ui {
         }
     }
 
+    #[allow(unused)]
     pub fn reset(&mut self) {
         self.input.clear();
         self.input.push(String::new());

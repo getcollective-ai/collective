@@ -203,7 +203,6 @@ mod tests {
         //     contains_any,
         //     "question: {question} does not contain any mentioned keywords"
         // );
-        assert!(true);
 
         Ok(())
     }
