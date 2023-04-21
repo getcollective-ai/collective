@@ -29,22 +29,24 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run cargo clippy
-        run: >
-          cargo +nightly clippy --all-targets --all-features -- -D warnings -D clippy::cargo
-          -D clippy::complexity
-          -D clippy::nursery
-          -D clippy::perf
-          -D clippy::style
-          -D clippy::suspicious
-          -D clippy::pedantic
-          -A clippy::single_char_lifetime_names
-          -A clippy::cargo_common_metadata
-          -A clippy::items-after-statements
-          -A clippy::multiple_crate_versions
-          -A clippy::module_name_repetitions
-          -A clippy::missing_const_for_fn
-          -A clippy::single-match-else
-          -A clippy::match-bool
-          -A clippy::uninlined_format_args
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: >
+            -- -D warnings -D clippy::cargo
+            -D clippy::complexity
+            -D clippy::nursery
+            -D clippy::perf
+            -D clippy::style
+            -D clippy::suspicious
+            -D clippy::pedantic
+            -A clippy::single_char_lifetime_names
+            -A clippy::cargo_common_metadata
+            -A clippy::items-after-statements
+            -A clippy::multiple_crate_versions
+            -A clippy::module_name_repetitions
+            -A clippy::missing_const_for_fn
+            -A clippy::single-match-else
+            -A clippy::match-bool
+            -A clippy::uninlined_format_args
 
