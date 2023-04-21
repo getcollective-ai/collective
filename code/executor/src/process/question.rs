@@ -33,8 +33,8 @@ impl QAndA {
         let mut message = String::new();
 
         message.push_str(&format!(
-            "Ask questions about the instruction. Just give a question. Do not include numbering \
-             or bullets.\n\nInstruction: {}\n---\n",
+            "Ask clarifying questions for the instruction. Do not include numbering or \
+             bullets.\n\nInstruction: {}\n---\n",
             self.instruction
         ));
 
@@ -48,10 +48,10 @@ impl QAndA {
 
         ChatRequest::new()
             .stop_at("\n")
-            .sys_msg(
-                "list relevant questions (one per line) that are important for completing the \
-                 task.",
-            )
+            // .sys_msg(
+            //     "list relevant questions (one per line) that are important for completing the \
+            //      task.",
+            // )
             .user_msg(message)
     }
 
