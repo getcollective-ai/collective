@@ -1,12 +1,8 @@
 use derive_build::Build;
 use futures::{stream::SplitSink, SinkExt};
-use protocol::{ClientPacket, Packet, ServerPacket};
+use protocol::ServerPacket;
 use tokio::net::TcpStream;
-// use futures::stream::{SplitSink, SplitStream};
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::WebSocketStream;
-
-use crate::process::reader::Reader;
+use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 #[derive(Build)]
 pub struct Writer {
@@ -21,10 +17,6 @@ impl From<SplitSink<WebSocketStream<TcpStream>, Message>> for Writer {
 }
 
 impl Writer {
-    pub fn inner(&self) -> &SplitSink<WebSocketStream<TcpStream>, Message> {
-        &self.inner
-    }
-
     pub async fn write(&mut self, element: ServerPacket) -> anyhow::Result<()> {
         let s = serde_json::to_string(&element)?;
 

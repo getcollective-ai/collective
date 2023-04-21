@@ -1,7 +1,7 @@
 use anyhow::bail;
 use derive_build::Build;
 use futures::{stream::SplitStream, StreamExt};
-use protocol::{ClientPacket, Packet};
+use protocol::ClientPacket;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
@@ -18,10 +18,6 @@ impl From<SplitStream<WebSocketStream<TcpStream>>> for Reader {
 }
 
 impl Reader {
-    pub fn inner(&self) -> &SplitStream<WebSocketStream<TcpStream>> {
-        &self.inner
-    }
-
     pub async fn read(&mut self) -> anyhow::Result<ClientPacket> {
         let msg = self.inner.next().await.unwrap()?;
 

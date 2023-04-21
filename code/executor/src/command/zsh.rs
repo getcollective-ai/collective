@@ -9,7 +9,7 @@ use crate::{
 
 #[async_trait]
 impl Command for Zsh {
-    async fn execute(&self, exec: Ctx, input: &str) -> anyhow::Result<String> {
+    async fn execute(&self, _exec: Ctx, input: &str) -> anyhow::Result<String> {
         let output = tokio::process::Command::new("zsh")
             .arg("-c")
             .arg(input)
@@ -27,7 +27,7 @@ impl Command for Zsh {
 
 #[cfg(test)]
 mod tests {
-    use crate::{command::Command, ctx, Ctx};
+    use crate::{command::Command, ctx};
 
     #[tokio::test]
     async fn test_oneline() -> anyhow::Result<()> {

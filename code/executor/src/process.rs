@@ -1,14 +1,10 @@
-use std::{pin::pin, sync::Arc};
-
 use anyhow::bail;
 use async_trait::async_trait;
 use futures::StreamExt;
-use parking_lot::RwLock;
 use protocol::{client::Client, server, ClientPacket, Packet, ServerPacket};
 use tokio::net::TcpStream;
 use tokio_tungstenite::WebSocketStream;
 use tracing::info;
-use utils::default;
 
 use crate::{
     process::{question::QAndA, reader::Reader, writer::Writer},
@@ -45,23 +41,10 @@ impl Comm for WebSocketComm {
     }
 }
 
-#[derive(Default)]
-struct Data {
-    instruction: RwLock<Option<String>>,
-    questions: RwLock<Vec<ClientPacket>>,
-}
-
-impl Data {
-    fn instruction_set(&self) -> bool {
-        self.instruction.read().is_some()
-    }
-}
-
 pub struct Process<C> {
     executor: Executor,
     q_and_a: Option<QAndA>,
     comm: C,
-    data: Arc<Data>,
 }
 
 impl<C: Comm> Process<C> {
@@ -69,7 +52,6 @@ impl<C: Comm> Process<C> {
         Self {
             executor,
             comm,
-            data: default(),
             q_and_a: None,
         }
     }
@@ -90,10 +72,10 @@ impl<C: Comm + Send> Process<C> {
                 info!("Instruction: {}", instruction);
 
                 let mut q_and_a = QAndA::new(self.executor.clone(), instruction);
-                let mut question = String::new();
+                let question = String::new();
 
                 // get stream of Result<String> from chat GPT
-                let mut word_stream = q_and_a.gen_question().await.enumerate();
+                let mut word_stream = q_and_a.gen_question().await?.enumerate();
 
                 info!("Question: {}", question);
 
@@ -105,7 +87,7 @@ impl<C: Comm + Send> Process<C> {
                 loop {
                     match word_stream.next().await {
                         Some((i, word)) => {
-                            let is_first_word = 1 == 0;
+                            let is_first_word = i == 0;
                             // send a packet that will be handled by frontend-cli/app.rs
                             self.comm
                                 .send(Packet::server(server::Question {
@@ -146,7 +128,7 @@ impl<C: Comm + Send> Process<C> {
                 q_and_a.answer(answer);
 
                 let mut question = String::new();
-                let mut word_stream = q_and_a.gen_question().await.enumerate();
+                let mut word_stream = q_and_a.gen_question().await?.enumerate();
 
                 // loop over stream of words (String),
                 // and append them to `question`
