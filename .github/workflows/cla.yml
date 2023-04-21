@@ -28,7 +28,7 @@ jobs:
           path-to-signatures: '.github/legal/signatures/cla-v1.json'
           path-to-document: 'https://github.com/getcollective-ai/collective/CONTRIBUTOR_AGREEMENT.md' # e.g. a CLA or a DCO document
           # branch should not be protected
-          branch: 'main'
+          branch: 'signatures'
           allowlist: user1,bot*,alexander-cato,andrewgazelka
 
           # the followings are the optional inputs - If the optional inputs are not given, then default values will be taken
