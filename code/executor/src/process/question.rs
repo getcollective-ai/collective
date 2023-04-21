@@ -33,7 +33,8 @@ impl QAndA {
         let mut message = String::new();
 
         message.push_str(&format!(
-            "Ask questions about the instruction.\n\nInstruction: {}\n---\n",
+            "Ask questions about the instruction. Just give a question. Do not include numbering \
+             or bullets.\n\nInstruction: {}\n---\n",
             self.instruction
         ));
 
