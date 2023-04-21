@@ -72,12 +72,10 @@ impl<C: Comm + Send> Process<C> {
                 info!("Instruction: {}", instruction);
 
                 let mut q_and_a = QAndA::new(self.executor.clone(), instruction);
-                let question = String::new();
 
                 // get stream of Result<String> from chat GPT
-                let mut word_stream = q_and_a.gen_question().await?.enumerate();
-
-                info!("Question: {}", question);
+                let mut question_stream = q_and_a.gen_question().await?.enumerate();
+                let mut question = String::new();
 
                 // loop over stream of words (String),
                 // and append them to `question`
@@ -85,13 +83,15 @@ impl<C: Comm + Send> Process<C> {
                 // each word will be sent as a packet to
                 // the frontend
                 loop {
-                    match word_stream.next().await {
+                    match question_stream.next().await {
                         Some((i, word)) => {
+                            let word = word?;
+                            question.push_str(&word);
                             let is_first_word = i == 0;
                             // send a packet that will be handled by frontend-cli/app.rs
                             self.comm
                                 .send(Packet::server(server::Question {
-                                    question: word.unwrap(),
+                                    question: word,
                                     is_first_word,
                                     is_last_word: false,
                                 }))
@@ -138,9 +138,9 @@ impl<C: Comm + Send> Process<C> {
                 loop {
                     match word_stream.next().await {
                         Some((i, word)) => {
-                            let word = word.unwrap();
+                            let word = word?;
                             let is_first_word = i == 0;
-                            question.push_str(word.clone().as_str());
+                            question.push_str(&word);
                             // send a packet that will be handled by frontend-cli/app.rs
                             self.comm
                                 .send(Packet::server(server::Question {
@@ -164,6 +164,7 @@ impl<C: Comm + Send> Process<C> {
                 }
 
                 info!("Question: {}", question);
+                q_and_a.add_question(question);
             }
         }
         Ok(())
