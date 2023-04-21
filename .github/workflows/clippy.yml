@@ -11,10 +11,14 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+
 jobs:
   clippy:
     permissions:
+      actions: write
+      checks: write
       contents: write
+      pull-requests: write
       statuses: write
     runs-on: ubuntu-latest
 
