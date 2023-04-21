@@ -1,6 +1,6 @@
 use futures::Stream;
 use tokio_openai::ChatRequest;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::Executor;
 
@@ -28,7 +28,10 @@ impl QAndA {
     fn question_request(&self) -> ChatRequest {
         let mut message = String::new();
 
-        message.push_str(&format!("Ask questions about the instruction.\n\nInstruction: {}\n---\n", self.instruction));
+        message.push_str(&format!(
+            "Ask questions about the instruction.\n\nInstruction: {}\n---\n",
+            self.instruction
+        ));
 
         for (question, answer) in self.questions.iter().zip(self.answers.iter()) {
             message.push_str(&format!("Q: {question}\nA: {answer}\n\n"));
@@ -41,7 +44,8 @@ impl QAndA {
         ChatRequest::new()
             .stop_at("\n")
             .sys_msg(
-                "list relevant questions (one per line) that are important for completing the task.",
+                "list relevant questions (one per line) that are important for completing the \
+                 task.",
             )
             .user_msg(message)
     }
