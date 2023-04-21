@@ -2,7 +2,7 @@
 
 [**Discord**](https://discord.gg/CzeXcYU8nC)
 [![codecov](https://codecov.io/github/getcollective-ai/collective/branch/main/graph/badge.svg?token=C7HBZAAX3B)](https://app.codecov.io/gh/getcollective-ai/collective)
-[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/getcollective-ai/collective/rust-test.yml?branch=main&style=for-the-badge" height="20">](https://github.com/getcollective-ai/collective/actions?query=branch%3Amain)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/getcollective-ai/collective/coverage.yml?branch=main&style=for-the-badge" height="20">](https://github.com/getcollective-ai/collective/actions?query=branch%3Amain)
 
 
 <img width="1564" alt="image" src="https://user-images.githubusercontent.com/7644264/232889999-7f76cef7-2602-423f-b907-bf943807ece6.png">
