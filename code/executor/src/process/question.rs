@@ -1,5 +1,9 @@
-use futures::Stream;
+use std::time::Duration;
+
+use futures::{Stream, StreamExt};
+use smooth_stream::smooth_stream;
 use tokio_openai::ChatRequest;
+use tokio_stream::wrappers::ReceiverStream;
 use tracing::info;
 
 use crate::Executor;
@@ -56,7 +60,34 @@ impl QAndA {
     ) -> anyhow::Result<impl Stream<Item = Result<String, anyhow::Error>>> {
         let request = self.question_request();
 
-        let stream = self.executor.ctx.ai.stream_chat(request).await?;
+        let mut tokens = self.executor.ctx.ai.stream_chat(request).await?.boxed();
+        let characters = {
+            let (tx, rx) = tokio::sync::mpsc::channel(1);
+
+            tokio::spawn(async move {
+                while let Some(token) = tokens.next().await {
+                    let token = match token {
+                        Ok(token) => token,
+                        Err(err) => {
+                            let _ = tx.send(Err(err)).await;
+                            break;
+                        }
+                    };
+
+                    let chars = token.chars().map(|c| c.to_string());
+
+                    for char in chars {
+                        if tx.send(Ok(char)).await.is_err() {
+                            break;
+                        }
+                    }
+                }
+            });
+
+            ReceiverStream::new(rx)
+        };
+
+        let stream = smooth_stream(characters, Duration::from_millis(20)).boxed();
 
         Ok(stream)
     }
