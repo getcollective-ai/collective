@@ -26,5 +26,5 @@ tokio-openai = "1.0.1"
 tokio-stream = "0.1.12"
 tokio-tungstenite = "0.18.0"
 tracing = "0.1.37"
-tracing-subscriber = "0.3.16"
+tracing-subscriber = "0.3.17"
 utils.workspace = true
