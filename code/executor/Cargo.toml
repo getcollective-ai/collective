@@ -23,7 +23,7 @@ tempfile = "3.5.0"
 tl = { version = "0.7.7", features = ["simd"] }
 tokio = { version = "1.27.0", features = ["full"] }
 tokio-openai = "1.0.1"
-tokio-stream = "0.1.12"
+tokio-stream = "0.1.14"
 tokio-tungstenite = "0.18.0"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
