@@ -1927,9 +1927,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-openai"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32267998fa42b665eaea0b3b4e515efca08b8d19f9dca639ffac205eff380c06"
+checksum = "cc9bb8b3758027193ebfd1515a35894aa49655289255032ab8cc439d267614c5"
 dependencies = [
  "anyhow",
  "derive-build",

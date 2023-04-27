@@ -22,7 +22,7 @@ smooth-stream = "0.1.1"
 tempfile = "3.5.0"
 tl = { version = "0.7.7", features = ["simd"] }
 tokio = { version = "1.28.0", features = ["full"] }
-tokio-openai = "1.0.1"
+tokio-openai = "1.0.2"
 tokio-stream = "0.1.12"
 tokio-tungstenite = "0.18.0"
 tracing = "0.1.38"
