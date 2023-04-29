@@ -4,7 +4,7 @@ use anyhow::Context;
 use crossterm::event::{poll, KeyCode};
 use futures::{future, future::Either};
 use protocol::{client, server::Server};
-use tracing::debug;
+use tracing::{debug, error};
 use tui::{backend::Backend, Terminal};
 
 use crate::{ui::Ui, Event, CANCEL_TOKEN};
@@ -40,26 +40,29 @@ impl App {
 
         std::thread::spawn({
             let tx = tx.clone();
-            move || {
-                loop {
-                    if CANCEL_TOKEN.is_cancelled() {
+            move || loop {
+                if CANCEL_TOKEN.is_cancelled() {
+                    return;
+                }
+
+                let poll_result = match poll(Duration::from_millis(10)) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("{e}");
                         return;
                     }
-                    if poll(Duration::from_millis(10)).unwrap() {
-                        // TODO: handle `unwrap` error in `poll`
-                        // It's guaranteed that `read` won't block, because `poll` returned
-                        // `Ok(true)`.
+                };
 
-                        let Ok(event) = crossterm::event::read() else {
+                if poll_result {
+                    let Ok(event) = crossterm::event::read() else {
                             debug!("Cannot read event from terminal");
                             continue;
                         };
 
-                        if let Err(e) = tx.send(Event::Terminal(event)) {
-                            debug!("Cannot send event to terminal -> shutting down: {e:?}");
-                            CANCEL_TOKEN.cancel();
-                            return;
-                        }
+                    if let Err(e) = tx.send(Event::Terminal(event)) {
+                        debug!("Cannot send event to terminal -> shutting down: {e:?}");
+                        CANCEL_TOKEN.cancel();
+                        return;
                     }
                 }
             }

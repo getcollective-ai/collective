@@ -72,9 +72,9 @@ pub async fn setup_comms(
                 }
             });
 
-            (tx1, rx2)
+            Ok((tx1, rx2))
         }
     };
 
-    Ok(res)
+    res
 }
