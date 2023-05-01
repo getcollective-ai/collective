@@ -56,7 +56,6 @@ impl Comm for SimpleComm {
 }
 
 /// Launch using [`SimpleComm`] and return (tx, rx) for sending and receiving packets.
-#[must_use]
 pub fn launch() -> Result<(
     UnboundedSender<ClientPacket>,
     UnboundedReceiver<ServerPacket>,
