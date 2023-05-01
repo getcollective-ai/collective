@@ -56,15 +56,11 @@ impl Comm for SimpleComm {
 }
 
 /// Launch using [`SimpleComm`] and return (tx, rx) for sending and receiving packets.
-///
-/// # Panics
-/// TODO: remove
-#[must_use]
-pub fn launch() -> (
+pub fn launch() -> Result<(
     UnboundedSender<ClientPacket>,
     UnboundedReceiver<ServerPacket>,
-) {
-    let executor = Executor::new().unwrap();
+)> {
+    let executor = Executor::new()?;
 
     let (tx1, rx1) = tokio::sync::mpsc::unbounded_channel();
     let (tx2, rx2) = tokio::sync::mpsc::unbounded_channel();
@@ -75,36 +71,64 @@ pub fn launch() -> (
         handle_client(executor, comm).await;
     });
 
-    (tx2, rx1)
+    Ok((tx2, rx1))
 }
 
-/// # Panics
-/// TODO: remove
 #[must_use]
 pub fn launch_websocket(args: Args) -> UnboundedReceiver<Event> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::spawn(async move {
         info!("Starting executor");
 
-        let executor = Executor::new().unwrap();
+        let executor = match Executor::new() {
+            Ok(v) => v,
+            Err(e) => {
+                error!("{e}");
+                return;
+            }
+        };
 
         let Args { ip, port } = args;
 
         let addr = format!("{ip}:{port}");
 
-        let listener = TcpListener::bind(&addr).await.unwrap();
+        let listener = match TcpListener::bind(&addr).await {
+            Ok(v) => v,
+            Err(e) => {
+                error!("{e}");
+                return;
+            }
+        };
 
-        tx.send(Event::Connected).unwrap();
+        if tx.send(Event::Connected).is_err() {
+            error!("Failed to send connected event.")
+        };
 
         info!("Listening on: {addr}");
 
         loop {
-            let (socket, _) = listener.accept().await.unwrap();
-            let ws_stream = accept_async(socket).await.unwrap();
+            let (socket, _) = match listener.accept().await {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("{e}");
+                    return;
+                }
+            };
+
+            let ws_stream = match accept_async(socket).await {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("{e}");
+                    return;
+                }
+            };
+
             info!(
                 "New WebSocket connection: {}",
-                ws_stream.get_ref().peer_addr().unwrap() /* TODO: is this unwrap bad? What if it
-                                                          * panics O_O */
+                match ws_stream.get_ref().peer_addr() {
+                    Ok(v) => v.to_string(),
+                    Err(e) => format!("Failed to get peer address: {e}"),
+                }
             );
 
             let ws = WebSocketComm::new(ws_stream);
