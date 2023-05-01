@@ -13,7 +13,8 @@ pub async fn setup_comms(
     mpsc::UnboundedReceiver<Packet<Server>>,
 )> {
     let Args { remote, ip, port } = args;
-    let res = match remote {
+
+    match remote {
         false => {
             info!("Launching local executor...");
             executor::launch()
@@ -74,7 +75,5 @@ pub async fn setup_comms(
 
             Ok((tx1, rx2))
         }
-    };
-
-    res
+    }
 }
